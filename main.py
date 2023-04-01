@@ -25,6 +25,8 @@ def main():
         config_file = parse_config_file(args.config)
         print(config_file)
     else:
-        print("No configuration file specified")
+        print("No configuration file specified...")
 if __name__ == "__main__":
     main()
+
+    
