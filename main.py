@@ -26,6 +26,7 @@ def main():
         print(config_file)
     else:
         print("No configuration file specified...")
+
 if __name__ == "__main__":
     main()
 

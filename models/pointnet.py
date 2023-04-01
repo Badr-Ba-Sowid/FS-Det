@@ -7,6 +7,7 @@ from torch.autograd import Variable
 import numpy as np
 import torch.nn.functional as F
 
+__all__ = ['PointNetCls']
 class STN3d(nn.Module):
     def __init__(self):
         super(STN3d, self).__init__()

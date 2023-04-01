@@ -1,14 +1,20 @@
-
-import os
-
-os.environ['KMP_DUPLICATE_LIB_OK']='True'
 import numpy as np
 import matplotlib.pyplot as plt
-from torch.utils.data import Dataset
-import torch
+
 import pickle
 
-class ModelNet40C:
+from typing import List
+
+import torch
+from torch.utils.data import Dataset, Subset, random_split
+
+from typing_extensions import Self
+
+
+__all__ = ['ModelNet40C', 'ModelNet40CFewShot']
+
+
+class ModelNet40C(Dataset):
 
     def __init__(self, data_path:str, label_path:str):
         self.data = np.load(data_path)
@@ -18,6 +24,7 @@ class ModelNet40C:
     def __getitem__(self, point_cloud_idx:int):
         sample =  self.data[point_cloud_idx]
         label = self.label[point_cloud_idx]
+
         return torch.tensor(sample), torch.tensor(label, dtype=torch.long)
         
     def __len__(self):
@@ -46,8 +53,15 @@ class ModelNet40C:
             point_clouds.append(self.data[i])
             self.data = np.delete(self.data, i)
             self.label = np.delete(self.label, i)
+
         return point_clouds
     
+    def train_and_test_split(self, split_ratio: float) -> List[Subset[Self]]:
+        train_size = int(split_ratio * self.__len__())
+        test_size = self.__len__() - train_size
+
+        return random_split(self , [train_size, test_size])
+
 class ModelNet40CFewShot:
     
     def __init__(self, dataset_path):

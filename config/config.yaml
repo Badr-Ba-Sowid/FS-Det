@@ -1,0 +1,15 @@
+PATHS:
+  dataset_source : 'data/model_net_40c/data_original.npy'
+  label_source: 'data/model_net_40c/label.npy'
+  check_point: 'ckpts/model_net_40'
+
+TRAINING:
+  seed: 42
+  training_split: 0.8
+  batch_size: 34
+  epoch: 32
+  data_loader_num_workers: 2
+  learning_rate: 0.001
+  scheduler_step: 20
+  scheduler_gamma: 0.5
+
