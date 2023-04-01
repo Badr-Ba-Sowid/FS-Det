@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import random
 import pathlib
 import yaml
 
@@ -44,13 +43,13 @@ class TrainingConfig:
 
     def _parse_training_params(self, config: dict[str, Any]) -> TrainingParams:
         return TrainingParams(seed=int(config.get('seed', 42)),
-                              training_split=float(config.get('training_split', 0.7)),
-                              batch_size=int(config.get('batch_size', 10)),
-                              epoch=int(config.get('epoch', 50)),
-                              data_loader_num_workers=int(config.get('data_loader_num_workers', 1)),
-                              learning_rate=float(config.get('learning_rate', 0.001)),
-                              scheduler_steps=int(config.get('scheduler_step', 10)),
-                              scheduler_gamma=float(config.get('scheduler_gamma', 0.1))
+                            training_split=float(config.get('training_split', 0.7)),
+                            batch_size=int(config.get('batch_size', 10)),
+                            epoch=int(config.get('epoch', 50)),
+                            data_loader_num_workers=int(config.get('data_loader_num_workers', 1)),
+                            learning_rate=float(config.get('learning_rate', 0.001)),
+                            scheduler_steps=int(config.get('scheduler_step', 10)),
+                            scheduler_gamma=float(config.get('scheduler_gamma', 0.1))
                 )
 
     def _parse_paths(self, config: dict[str, Any]) -> Uris:
