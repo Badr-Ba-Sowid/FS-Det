@@ -1,3 +1,4 @@
-from .pointnet import PointNetCls
+__all__ = ['PointNetCls', 'ProtoNet']
 
-__all__ = ['PointNetCls']
+from .pointnet import PointNetCls
+from .pointnet_proto import ProtoNet
