@@ -15,7 +15,7 @@ def test(config_uri: str):
 
     dataset = ModelNet40C(training_uris.dataset, training_uris.label)
     
-    _, test_set = dataset.train_and_test_split(training_params.training_split)
+    _, test_set = dataset.train_val_test_split(training_params.training_split)
     test_data_loader = torch.utils.data.DataLoader(
         test_set,
         batch_size=training_params.batch_size,

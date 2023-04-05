@@ -27,6 +27,17 @@ class Uris:
     label: str
     ckpts: str
 
+@dataclass
+class FewShotParams:
+    n_ways: int
+    k_shots: int
+    n_tasks: int
+
+@dataclass
+class DatasetParams:
+    name: str
+    num_classes: int
+
 class TrainingConfig:
 
     @classmethod
@@ -40,6 +51,8 @@ class TrainingConfig:
     def __init__(self, data: dict[str, Any]) -> None:
         self.uris = self._parse_paths(data.get('PATHS', {}))
         self.trainig_params = self._parse_training_params(data.get('TRAINING', {}))
+        self.few_shot_params = self._parse_few_shot_params(data.get('FEWSHOT', {}))
+        self.dataset_params = self._parse_dataset_params(data.get('DATASET', {}))
 
     def _parse_training_params(self, config: dict[str, Any]) -> TrainingParams:
         return TrainingParams(seed=int(config.get('seed', 42)),
@@ -57,3 +70,12 @@ class TrainingConfig:
                     label=(config.get('label_source', '')),
                     ckpts=(config.get('check_point', ''))
                 )
+
+    def _parse_few_shot_params(self, config: dict[str, Any]) -> FewShotParams:
+        return FewShotParams(n_ways=int(config.get('n_way', 0)),
+                                k_shots=int(config.get('k_shots', 0)),
+                                n_tasks=int(config.get('n_tasks', 0))
+                            )
+    
+    def _parse_dataset_params(self, config: dict[str, Any]) -> DatasetParams:
+        return DatasetParams(name=str(config.get('name', '')), num_classes=int(config.get('num_classes', 0)))

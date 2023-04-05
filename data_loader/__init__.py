@@ -1,3 +1,3 @@
-__all__ = ['ModelNet40C', 'ModelNet40CFewShot']
+__all__ = ['ModelNet40C', 'ModelNet40CFewShot', 'FewShotBatchSampler', 'PointCloudDataset']
 
-from .data_loader import ModelNet40C, ModelNet40CFewShot
+from .data_loader import ModelNet40C, ModelNet40CFewShot, FewShotBatchSampler, PointCloudDataset

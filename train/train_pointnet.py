@@ -17,7 +17,7 @@ def train(config_uri: str):
 
     dataset = ModelNet40C(training_uris.dataset, training_uris.label)
 
-    train_set, _ = dataset.train_and_test_split(training_params.training_split)
+    train_set, _, _= dataset.train_val_test_split(train_ratio=training_params.training_split)
 
     train_data_loader = torch.utils.data.DataLoader(
         train_set,
