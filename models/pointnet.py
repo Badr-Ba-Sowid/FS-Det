@@ -1,4 +1,6 @@
 from __future__ import print_function
+from __future__ import annotations
+
 import torch
 import torch.nn as nn
 import torch.nn.parallel
@@ -6,6 +8,8 @@ import torch.utils.data
 from torch.autograd import Variable
 import numpy as np
 import torch.nn.functional as F
+
+__all__ = ['PointNetCls']
 
 class STN3d(nn.Module):
     def __init__(self):
