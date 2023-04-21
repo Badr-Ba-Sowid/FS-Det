@@ -1,3 +1,3 @@
-__all__ = ['TrainingConfig']
+__all__ = ['Config']
 
-from .config import TrainingConfig
+from .config import Config

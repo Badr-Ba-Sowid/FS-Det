@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from tqdm import tqdm
 from typing import Tuple
+import matplotlib.pyplot as plt
 
 import torch
 import torch.utils.data
@@ -10,14 +11,15 @@ from torch.utils.data import DataLoader
 
 from models import ProtoNet
 from data_loader import ModelNet40C, FewShotBatchSampler, PointCloudDataset
-from config import TrainingConfig
-
+from config import Config
+from test.test_protonet import test, plot_few_shot
 
 
 def evaluate(model: ProtoNet, val_loader: DataLoader) -> Tuple[float, ...]:
-    model.eval()
 
     with torch.no_grad():
+        model.eval()
+
         total_loss = 0
         total_acc = 0
         acc = 0
@@ -34,45 +36,48 @@ def evaluate(model: ProtoNet, val_loader: DataLoader) -> Tuple[float, ...]:
             loss = model.compute_loss(prototypes, prototype_labels, query_features, query_labels)
             total_loss += loss.item()
 
-            actual_labels = (prototype_labels[None:] == query_labels[:, None]).long().argmax(dim=-1)
-            acc =(predicted_labels.argmax(dim=1) == actual_labels).float().mean().item()
+            actual_labels = ((prototype_labels[None:] == query_labels[:, None]).long().argmax(dim=-1)).to(model.device)
+            acc =((predicted_labels.argmax(dim=1) == actual_labels).float().mean().item())
             total_acc += acc
 
-        return total_loss/len(val_loader), acc/len(val_loader)
+        return total_loss/len(val_loader), total_acc/len(val_loader)
 
-def train(config_uri: str):
-    config = TrainingConfig.from_file(config_uri)
+def train(config: Config):
     training_params = config.trainig_params
-    training_uris = config.uris
     few_shot_params = config.few_shot_params
     dataset_params = config.dataset_params
 
     torch.manual_seed(training_params.seed)
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    print(device)
-    model = ProtoNet(num_classes=dataset_params.num_classes, device=device, pretrained_ckpts='ckpts/mode_net_40/model_net_40')
+    print(f'====================Using {device} to train======================')
+
+    model = ProtoNet(num_classes=dataset_params.num_classes, device=device)
 
     optimizer = optim.AdamW(model.parameters(), lr=training_params.learning_rate)
-    scheduler = optim.lr_scheduler.StepLR(optimizer=optimizer, step_size=training_params.scheduler_steps, gamma=training_params.scheduler_gamma)
+    scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer=optimizer, T_max=training_params.epochs, eta_min=(training_params.learning_rate)*0.001, last_epoch=-1)
 
-    model_net_dataset = ModelNet40C(training_uris.dataset, training_uris.label)
-    train_cls_idx, validation_cls_idx, _ = model_net_dataset.train_test_val_class_indices_split(train_ratio=training_params.training_split, seed=training_params.seed)
+    model_net_dataset = ModelNet40C(dataset_params.dataset, dataset_params.label)
+    train_cls_idx, validation_cls_idx, test_cls_idx = model_net_dataset.train_test_val_class_indices_split(train_ratio=training_params.training_split, seed=training_params.seed)
 
     train_set = PointCloudDataset.from_dataset(model_net_dataset.pcds_to_tensor(), model_net_dataset.labels_to_tensor(), train_cls_idx)
     validation_set = PointCloudDataset.from_dataset(model_net_dataset.pcds_to_tensor(), model_net_dataset.labels_to_tensor(), validation_cls_idx)
-    
+    test_set = PointCloudDataset.from_dataset(model_net_dataset.pcds_to_tensor(), model_net_dataset.labels_to_tensor(), test_cls_idx)
+
     train_loader = DataLoader(
         train_set,
         batch_sampler=FewShotBatchSampler(train_set.labels, n_ways=few_shot_params.n_ways, k_shots=few_shot_params.k_shots),
-        num_workers=int(training_params.data_loader_num_workers))
+        num_workers=int(dataset_params.data_loader_num_workers))
 
     val_loader = DataLoader(
         validation_set,
         batch_sampler=FewShotBatchSampler(validation_set.labels, n_ways=few_shot_params.n_ways, k_shots=few_shot_params.k_shots),
-        num_workers=int(training_params.data_loader_num_workers))
+        num_workers=int(dataset_params.data_loader_num_workers))
     
-    
+    training_loss_per_epoch = []
+    val_loss_per_epoch = []
+    best_val_acc = 0
+
     for epoch in range(training_params.epochs):
         model.train()
         total_loss = 0
@@ -99,7 +104,42 @@ def train(config_uri: str):
 
         print(f"Epoch {epoch+1}/{training_params.epochs}, Loss: {total_loss/len(train_loader)}, Val_loss: {val_loss}, Val_acc: {val_acc}")
 
-    torch.save(model.state_dict(), training_uris.ckpts)
+        if val_acc > best_val_acc:
+            best_val_acc = val_acc
+            print('best accuracy')
+            print(best_val_acc)
+            print('Saving a checkpoint')
+            torch.save(model.state_dict(), training_params.ckpts)
+
+        training_loss_per_epoch.append(total_loss/len(train_loader))
+        val_loss_per_epoch.append(val_loss)
+
+    plot_training_val_loss(training_loss_per_epoch, val_loss_per_epoch)
+
+    test_proto(model, test_set)
+
+def test_proto(model: ProtoNet, test_set: PointCloudDataset):
+    print('===========Begin testing=============')
+    protonet_accuracies = dict()
+    for k in [5, 10, 15, 20]:
+        protonet_accuracies[k], data_feats = test(model, test_set, k_shot=k)
+        print(
+            "Accuracy for k=%i: %4.2f%% (+-%4.2f%%)"
+            % (k, 100.0 * protonet_accuracies[k][0], 100 * protonet_accuracies[k][1])
+        )
+
+    plot_few_shot(protonet_accuracies, 'ProtoNet')
+
+def plot_training_val_loss(training_loss: list[float], val_loss: list[float]):
+    print('Saving training/validation losses plot')
+    epochs = range(1, len(training_loss) + 1)
+    plt.plot(epochs, training_loss, 'b-', label='Training loss')
+    plt.plot(epochs, val_loss, 'r-', label='Validation loss')
+    plt.title('Training and validation loss')
+    plt.xlabel('Epochs')
+    plt.ylabel('Loss')
+    plt.legend()
+    plt.savefig('training_plot')
 
 
 def split_batch(pcd_features: torch.Tensor, labels: torch.Tensor):

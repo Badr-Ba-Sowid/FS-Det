@@ -4,26 +4,25 @@ import torch.nn.functional as F
 import torch.utils.data
 import torch.optim as optim
 
-from config import TrainingConfig
+from config import Config
 from data_loader import ModelNet40C
 from models import PointNetCls
 
-def train(config_uri: str):
-    training_config = TrainingConfig.from_file(config_uri)
-    training_params = training_config.trainig_params
-    training_uris = training_config.uris
+def train(config: Config):
+    training_params = config.trainig_params
+    dataset_params = config.dataset_params
 
     torch.manual_seed(training_params.seed)
 
-    dataset = ModelNet40C(training_uris.dataset, training_uris.label)
+    dataset = ModelNet40C(dataset_params.dataset, dataset_params.label)
 
     train_set, _, _= dataset.train_val_test_split(train_ratio=training_params.training_split)
 
     train_data_loader = torch.utils.data.DataLoader(
         train_set,
-        batch_size=training_params.batch_size,
+        batch_size=dataset_params.batch_size,
         shuffle=True,
-        num_workers=int(training_params.data_loader_num_workers))
+        num_workers=int(dataset_params.data_loader_num_workers))
 
     classifier = PointNetCls(k = 40)
     classifier.cuda()
@@ -48,5 +47,5 @@ def train(config_uri: str):
                 print(f'[{epoch + 1}, {i + 1:5d}] loss: {loss:.4f}')
         scheduler.step()
 
-    torch.save(classifier.state_dict(), training_uris.ckpts)
+    torch.save(classifier.state_dict(), training_params.ckpts)
 

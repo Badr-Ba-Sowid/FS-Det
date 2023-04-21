@@ -4,23 +4,23 @@ import torch.utils.data
 
 from tqdm import tqdm
 
-from config import TrainingConfig
+from config import Config
 from data_loader import ModelNet40C
 from models import PointNetCls
 
 def test(config_uri: str):
-    training_config = TrainingConfig.from_file(config_uri)
+    training_config = Config.from_file(config_uri)
     training_params = training_config.trainig_params
-    training_uris = training_config.uris
+    dataset_params = training_config.dataset_params
 
-    dataset = ModelNet40C(training_uris.dataset, training_uris.label)
+    dataset = ModelNet40C(dataset_params.dataset, dataset_params.label)
     
     _, test_set = dataset.train_val_test_split(training_params.training_split)
     test_data_loader = torch.utils.data.DataLoader(
         test_set,
-        batch_size=training_params.batch_size,
+        batch_size=dataset_params.batch_size,
         shuffle=True,
-        num_workers=int(training_params.data_loader_num_workers))
+        num_workers=int(dataset_params.data_loader_num_workers))
 
     classifier = PointNetCls(k = 40)
     classifier.eval()

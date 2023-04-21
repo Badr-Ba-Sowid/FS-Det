@@ -18,9 +18,8 @@ class ProtoNet(nn.Module):
         self.pointnet.to(device)
         self.device = device
 
-        if pretrained_ckpts:
-            self.pointnet.load_state_dict(torch.load(pretrained_ckpts))
-            print(self.pointnet.children())
+        # if pretrained_ckpts:
+        #     self.pointnet.load_state_dict(torch.load(pretrained_ckpts))
 
     def forward(self, x):
         return self.pointnet(x)
@@ -47,11 +46,22 @@ class ProtoNet(nn.Module):
     def predict(self, prototypes: torch.Tensor, query_features: torch.Tensor) -> torch.Tensor:
         distances =  self.euclidean_distance(prototypes, query_features)
 
-        return F.log_softmax(-distances, dim=-1)
+        return F.log_softmax(-distances, dim=-1).to(self.device)
+
+    def classify_features(self, prototypes: torch.Tensor, prototype_cls: torch.Tensor, query_features: torch.Tensor, query_cls: torch.Tensor) -> Tuple[torch.Tensor,...]:
+        predicted_labels = self.predict(prototypes, query_features)
+        
+        loss = self.compute_loss(prototypes, prototype_cls, query_features, query_cls)
+        
+        actual_labels = ((prototype_cls[None:] == query_cls[:, None]).long().argmax(dim=-1)).to(self.device)
+
+        acc =((predicted_labels.argmax(dim=1) == actual_labels).float().mean())
+
+        return predicted_labels, loss, acc
 
     def compute_loss(self, prototypes: torch.Tensor, prototype_labels: torch.Tensor, query_features: torch.Tensor, query_labels: torch.Tensor) -> torch.Tensor:
         log_p_y = self.predict(prototypes, query_features)
 
-        labels = (prototype_labels[None:] == query_labels[:, None]).long().argmax(dim=-1)
+        labels = (prototype_labels[None:] == query_labels[:, None]).long().argmax(dim=-1).to(self.device)
 
-        return F.cross_entropy(log_p_y, labels)
+        return F.cross_entropy(log_p_y, labels).to(self.device)
