@@ -1,21 +1,21 @@
 PATHS:
   dataset_source : 'data/model_net_40c/data_original.npy'
   label_source: 'data/model_net_40c/label.npy'
-  check_point: 'ckpts/proto_net_40'
+  check_point: 'ckpts/proto_net_40/proto_net_1'
 
 TRAINING:
   seed: 42
   train_ratio: 0.8
   batch_size: 34
-  epoch: 15
+  epochs: 100
   data_loader_num_workers: 5
-  learning_rate: 0.001
-  scheduler_step: 20
-  scheduler_gamma: 0.5
+  learning_rate: 0.0001
+  scheduler_step: 10
+  scheduler_gamma: 0.1
 
 FEWSHOT:
   n_ways: 5
-  k_shots: 5
+  k_shots: 10
   n_tasks: 10
 
 DATASET:

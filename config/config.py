@@ -15,7 +15,7 @@ class TrainingParams:
     seed: int
     training_split: float
     batch_size: int
-    epoch: int
+    epochs: int
     data_loader_num_workers: int
     learning_rate: float
     scheduler_steps: int
@@ -45,7 +45,7 @@ class TrainingConfig:
         config_path = pathlib.Path(uri)
         with config_path.open('r') as f:
             data = yaml.load(f, Loader=yaml.FullLoader)
-        
+
         return cls(data)
     
     def __init__(self, data: dict[str, Any]) -> None:
@@ -58,7 +58,7 @@ class TrainingConfig:
         return TrainingParams(seed=int(config.get('seed', 42)),
                             training_split=float(config.get('training_split', 0.7)),
                             batch_size=int(config.get('batch_size', 10)),
-                            epoch=int(config.get('epoch', 50)),
+                            epochs=int(config.get('epochs', 50)),
                             data_loader_num_workers=int(config.get('data_loader_num_workers', 1)),
                             learning_rate=float(config.get('learning_rate', 0.001)),
                             scheduler_steps=int(config.get('scheduler_step', 10)),
@@ -72,10 +72,10 @@ class TrainingConfig:
                 )
 
     def _parse_few_shot_params(self, config: dict[str, Any]) -> FewShotParams:
-        return FewShotParams(n_ways=int(config.get('n_way', 0)),
+        return FewShotParams(n_ways=int(config.get('n_ways', 0)),
                                 k_shots=int(config.get('k_shots', 0)),
                                 n_tasks=int(config.get('n_tasks', 0))
                             )
-    
+
     def _parse_dataset_params(self, config: dict[str, Any]) -> DatasetParams:
         return DatasetParams(name=str(config.get('name', '')), num_classes=int(config.get('num_classes', 0)))

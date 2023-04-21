@@ -58,7 +58,7 @@ class ModelNet40C(Dataset):
             self.labels = np.delete(self.labels, i)
 
         return point_clouds
-    
+
     def train_val_test_split(self, train_ratio: float = 0.7, validation_ratio: float = 0.1) -> List[Subset[Self]]:
         train_size = int(train_ratio * self.__len__())
         remaining_size = self.__len__() - train_size
@@ -91,7 +91,7 @@ class PointCloudDataset(Dataset):
 
         self.pcds = point_clouds
         self.labels = labels
-    
+
     @staticmethod
     def from_dataset(all_point_clouds: torch.Tensor, all_labels: torch.Tensor, label_indices: torch.Tensor):
         class_mask = (all_labels[:, None] == label_indices[None, :]).any(dim=-1)
@@ -100,7 +100,7 @@ class PointCloudDataset(Dataset):
 
     def __getitem__(self, idx) -> Tuple[torch.Tensor, torch.Tensor]:
         return self.pcds[idx], self.labels[idx]
-    
+
     def __len__(self) -> int:
         return self.pcds.shape[0]
 
@@ -142,8 +142,7 @@ class FewShotBatchSampler(Sampler):
         for c in self.classes:
             self.indices_per_class[c] = torch.where(self.dataset_labels==c)[0]
             self.batches_per_class[c] = self.indices_per_class[c].shape[0] // self.k_shot
-        
-        
+
         self.iterations: int = sum(self.batches_per_class.values()) // self.n_way
         self.class_list: list[int] = [c for c in self.classes for _ in range(self.batches_per_class[c])]
 

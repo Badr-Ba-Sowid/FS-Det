@@ -35,7 +35,7 @@ def train(config_uri: str):
                                         gamma=training_params.scheduler_gamma)
     loss_fn = F.nll_loss
 
-    for epoch in range(training_params.epoch):
+    for epoch in range(training_params.epochs):
         for i, data in enumerate(train_data_loader, 0):
             point_clouds, labels = data
             point_clouds, labels = point_clouds.cuda(), labels.cuda()

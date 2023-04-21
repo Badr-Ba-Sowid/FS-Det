@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Tuple
+from typing import Tuple, Optional
 
 import torch
 import torch.nn as nn
@@ -12,10 +12,15 @@ __all__ = ['ProtoNet']
 
 
 class ProtoNet(nn.Module):
-    def __init__(self, num_classes: int, device: torch.device) -> None:
+    def __init__(self, num_classes: int, device: torch.device, pretrained_ckpts: Optional[str]=None) -> None:
         super(ProtoNet, self).__init__()
         self.pointnet = PointNetEncoder(num_classes)
+        self.pointnet.to(device)
         self.device = device
+
+        if pretrained_ckpts:
+            self.pointnet.load_state_dict(torch.load(pretrained_ckpts))
+            print(self.pointnet.children())
 
     def forward(self, x):
         return self.pointnet(x)
