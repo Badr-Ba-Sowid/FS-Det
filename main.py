@@ -5,7 +5,8 @@ import sys
 from click import prompt
 
 from train.train_pointnet import train as pointtnet_train
-from test.test_protonet import test as protonet_test
+from test.test_protonet import prepare_dataset as protonet_test
+from test.test_pointnet import test as pointnet_test
 from train.train_protonet import train as protonet_train
 from config import Config
 
@@ -21,6 +22,7 @@ logger.addHandler(ch)
 def run_test(config: Config):
     logger.info(msg='=================Testing begins====================')
     pass
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
@@ -45,6 +47,12 @@ if __name__ == "__main__":
         logger.info(msg='=================FewShot Training begins====================')
         protonet_train(config)
     elif option == 3:
-        run_test(config)
+        choosen_model: int = prompt('1. ProtoNet \n2. PointNet', value_proc=int)
+        if choosen_model == 1:
+            protonet_test(config)
+        elif choosen_model == 2:
+            run_test(config)
+        else:
+            raise ValueError('Provided wrong input')
     else:
         raise ValueError('Provided wrong input')

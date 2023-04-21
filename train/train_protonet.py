@@ -12,7 +12,7 @@ from torch.utils.data import DataLoader
 from models import ProtoNet
 from data_loader import ModelNet40C, FewShotBatchSampler, PointCloudDataset
 from config import Config
-from test.test_protonet import test, plot_few_shot
+from test.test_protonet import test_proto
 
 
 def evaluate(model: ProtoNet, val_loader: DataLoader) -> Tuple[float, ...]:
@@ -31,14 +31,11 @@ def evaluate(model: ProtoNet, val_loader: DataLoader) -> Tuple[float, ...]:
 
             support_features, query_features, support_labels, query_labels = split_batch(pcd_embeddings, labels) 
             prototypes, prototype_labels = model.compute_prototypes(support_features, support_labels)
-            predicted_labels = model.predict(prototypes, query_features)
 
-            loss = model.compute_loss(prototypes, prototype_labels, query_features, query_labels)
+            _, loss, acc = model.classify_features(prototypes, prototype_labels, query_features, query_labels)
+            
             total_loss += loss.item()
-
-            actual_labels = ((prototype_labels[None:] == query_labels[:, None]).long().argmax(dim=-1)).to(model.device)
-            acc =((predicted_labels.argmax(dim=1) == actual_labels).float().mean().item())
-            total_acc += acc
+            total_acc += acc.item()
 
         return total_loss/len(val_loader), total_acc/len(val_loader)
 
@@ -102,7 +99,7 @@ def train(config: Config):
 
         val_loss, val_acc = evaluate(model, val_loader)
 
-        print(f"Epoch {epoch+1}/{training_params.epochs}, Loss: {total_loss/len(train_loader)}, Val_loss: {val_loss}, Val_acc: {val_acc}")
+        print(f"Epoch {epoch+1}/{training_params.epochs}, Training_loss: {total_loss/len(train_loader)}, Val_loss: {val_loss}, Val_acc: {val_acc}")
 
         if val_acc > best_val_acc:
             best_val_acc = val_acc
@@ -116,19 +113,7 @@ def train(config: Config):
 
     plot_training_val_loss(training_loss_per_epoch, val_loss_per_epoch)
 
-    test_proto(model, test_set)
-
-def test_proto(model: ProtoNet, test_set: PointCloudDataset):
-    print('===========Begin testing=============')
-    protonet_accuracies = dict()
-    for k in [5, 10, 15, 20]:
-        protonet_accuracies[k], data_feats = test(model, test_set, k_shot=k)
-        print(
-            "Accuracy for k=%i: %4.2f%% (+-%4.2f%%)"
-            % (k, 100.0 * protonet_accuracies[k][0], 100 * protonet_accuracies[k][1])
-        )
-
-    plot_few_shot(protonet_accuracies, 'ProtoNet')
+    test_proto(model, test_set, config.testing_params.k_shots, dataset_params.batch_size, dataset_params.data_loader_num_workers)
 
 def plot_training_val_loss(training_loss: list[float], val_loss: list[float]):
     print('Saving training/validation losses plot')

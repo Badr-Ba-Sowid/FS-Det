@@ -65,7 +65,7 @@ class Config:
                             learning_rate=float(config.get('learning_rate', 0.001)),
                             scheduler_steps=int(config.get('scheduler_step', 10)),
                             scheduler_gamma=float(config.get('scheduler_gamma', 0.1)),
-                            ckpts=(config.get('check_point', ''))
+                            ckpts=(config.get('check_point_uri', ''))
 
                 )
 

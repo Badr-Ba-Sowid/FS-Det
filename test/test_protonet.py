@@ -11,16 +11,17 @@ import torch.utils.data
 from torch.utils.data import DataLoader
 
 from models import ProtoNet
-from data_loader import PointCloudDataset
+from data_loader import PointCloudDataset, ModelNet40C
+from config import Config
 
-def test(model: ProtoNet, dataset: PointCloudDataset, k_shot: int):
+def test(model: ProtoNet, dataset: PointCloudDataset, k_shot: int, batch_size: int, num_worker: int):
     num_classes = (dataset.labels.unique().shape[0]) -1
     exmps_per_class = dataset.labels.shape[0] // num_classes
 
     with torch.no_grad():
         model.eval()
         
-        test_loader = DataLoader(dataset, batch_size=128, num_workers=4)
+        test_loader = DataLoader(dataset, batch_size=batch_size, num_workers=num_worker)
 
         pcd_features = []
         pcd_targets = []
@@ -88,5 +89,29 @@ def plot_few_shot(acc_dict, name, color=None, ax=None):
     
     plt.savefig('few_shot_performance')
 
-def begin_test(config: str):
-    pass
+def prepare_dataset(config: Config):
+    dataset_params = config.dataset_params
+    test_params = config.testing_params
+
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+    dataset = ModelNet40C(dataset_params.dataset, dataset_params.label)
+    test_set = PointCloudDataset(dataset.pcds_to_tensor(), dataset.labels_to_tensor())
+
+    model = ProtoNet(dataset_params.num_classes, device=device)
+    model.load_state_dict(torch.load(test_params.model_state))
+
+    test_proto(model, test_set, test_params.k_shots, dataset_params.batch_size, dataset_params.data_loader_num_workers)
+
+def test_proto(model: ProtoNet, test_set: PointCloudDataset, k_shots: list[int], batch_size: int, num_worker: int):
+    print('===========Begin testing=============')
+    protonet_accuracies = dict()
+
+    for k in k_shots:
+        protonet_accuracies[k], data_feats = test(model, test_set, k, batch_size, num_worker)
+        print(
+            "Accuracy for k=%i: %4.2f%% (+-%4.2f%%)"
+            % (k, 100.0 * protonet_accuracies[k][0], 100 * protonet_accuracies[k][1])
+        )
+
+    plot_few_shot(protonet_accuracies, 'ProtoNet')

@@ -1,11 +1,11 @@
 TRAINING:
   seed: 42
   train_ratio: 0.8
-  epochs: 100
+  epochs: 130
   learning_rate: 0.0005
   scheduler_step: 10
   scheduler_gamma: 0.1
-  check_point_uri: 'ckpts/proto_net_40/proto_net_1'
+  check_point_uri: 'ckpts/proto_net_40/proto_net_2'
 
 FEWSHOT:
   n_ways: 5
@@ -23,4 +23,4 @@ DATASET:
 
 
 TESTING:
-  model_state: 'ckpts/proto_net_40/proto_net_1'
+  model_state: 'ckpts/proto_net_40/proto_net_2'
