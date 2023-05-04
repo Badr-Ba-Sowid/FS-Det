@@ -10,13 +10,12 @@ from torch import  optim
 from torch.utils.data import DataLoader
 
 from models import ProtoNet
-from data_loader import ModelNet40C, FewShotBatchSampler, PointCloudDataset
+from data_loader import FewShotBatchSampler, PointCloudDataset, NPYDataset
 from config import Config
 from test.test_protonet import test_proto
 
 
 def evaluate(model: ProtoNet, val_loader: DataLoader) -> Tuple[float, ...]:
-
     with torch.no_grad():
         model.eval()
 
@@ -43,6 +42,7 @@ def train(config: Config):
     training_params = config.trainig_params
     few_shot_params = config.few_shot_params
     dataset_params = config.dataset_params
+    testing_params = config.testing_params
 
     torch.manual_seed(training_params.seed)
 
@@ -51,15 +51,20 @@ def train(config: Config):
 
     model = ProtoNet(num_classes=dataset_params.num_classes, device=device)
 
+    dataset = NPYDataset(dataset_params.dataset, dataset_params.label)
+
+
+
     optimizer = optim.AdamW(model.parameters(), lr=training_params.learning_rate)
     scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer=optimizer, T_max=training_params.epochs, eta_min=(training_params.learning_rate)*0.001, last_epoch=-1)
 
-    model_net_dataset = ModelNet40C(dataset_params.dataset, dataset_params.label)
-    train_cls_idx, validation_cls_idx, test_cls_idx = model_net_dataset.train_test_val_class_indices_split(train_ratio=training_params.training_split, seed=training_params.seed)
-
-    train_set = PointCloudDataset.from_dataset(model_net_dataset.pcds_to_tensor(), model_net_dataset.labels_to_tensor(), train_cls_idx)
-    validation_set = PointCloudDataset.from_dataset(model_net_dataset.pcds_to_tensor(), model_net_dataset.labels_to_tensor(), validation_cls_idx)
-    test_set = PointCloudDataset.from_dataset(model_net_dataset.pcds_to_tensor(), model_net_dataset.labels_to_tensor(), test_cls_idx)
+    # model_net_dataset = ModelNet40C(dataset_params.dataset, dataset_params.label)
+    train_cls_idx, validation_cls_idx, test_cls_idx = dataset.train_test_val_class_indices_split(train_ratio=training_params.training_split, seed=training_params.seed)
+    train_set = PointCloudDataset.from_dataset(dataset.pcds_to_tensor(), dataset.labels_to_tensor(), train_cls_idx)
+    validation_set = PointCloudDataset.from_dataset(dataset.pcds_to_tensor(), dataset.labels_to_tensor(), validation_cls_idx)
+    test_set = PointCloudDataset.from_dataset(dataset.pcds_to_tensor(), dataset.labels_to_tensor(), test_cls_idx)
+    # save a copy of the test set
+    # test_set.save_dataset(testing_params.dataset_path)
 
     train_loader = DataLoader(
         train_set,
@@ -81,6 +86,7 @@ def train(config: Config):
 
         for batch in tqdm(train_loader, desc=f'Training batch'):
             point_clouds, labels = batch
+            point_clouds, labels = point_clouds.to(device), labels.to(device)
 
             pcd_embeddings = model(point_clouds)
 
@@ -113,7 +119,7 @@ def train(config: Config):
 
     plot_training_val_loss(training_loss_per_epoch, val_loss_per_epoch)
 
-    test_proto(model, test_set, config.testing_params.k_shots, dataset_params.batch_size, dataset_params.data_loader_num_workers)
+    test_proto(model, test_set, testing_params.k_shots, dataset_params.batch_size, dataset_params.data_loader_num_workers)
 
 def plot_training_val_loss(training_loss: list[float], val_loss: list[float]):
     print('Saving training/validation losses plot')

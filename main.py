@@ -38,7 +38,6 @@ if __name__ == "__main__":
     logger.info('Please choose the option that you wish to run:')
 
     option: int = prompt('1. Train a dataset on PointNet\n2. Train ProtoNet for fewshot learning\n3. Test your model\nOption', value_proc=int)
-    print()
 
     if option == 1:
         logger.info(msg='=================Supervised Training begins====================')

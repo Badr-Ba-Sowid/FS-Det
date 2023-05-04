@@ -22,6 +22,7 @@ class TrainingParams:
 
 @dataclass
 class TestingParams:
+    dataset_path:str
     model_state: str
     k_shots: list[int]
 
@@ -38,6 +39,7 @@ class DatasetParams:
     num_classes: int
     dataset: str
     label: str
+    text_label_source: str
     data_loader_num_workers: int
     batch_size: int
 
@@ -77,7 +79,8 @@ class Config:
                             )
 
     def _parse_dataset_params(self, config: dict[str, Any]) -> DatasetParams:
-        return DatasetParams(name=str(config.get('name', '')), 
+        return DatasetParams(name=str(config.get('name', '')),
+                                text_label_source=str(config.get('text_label_source', '')),
                                 num_classes=int(config.get('num_classes', 0)),
                                 dataset=(config.get('dataset_source', '')), 
                                 label=(config.get('label_source', '')),
@@ -86,4 +89,6 @@ class Config:
                 )
 
     def _parse_testing_params(self, config: dict[str, Any]) -> TestingParams:
-        return TestingParams(model_state=str(config.get('model_state', '')), k_shots=self.few_shot_params.test_k_shots)
+        return TestingParams(dataset_path = str(config.get('dataset_path')),
+                                model_state=str(config.get('model_state', '')),
+                                k_shots=self.few_shot_params.test_k_shots)

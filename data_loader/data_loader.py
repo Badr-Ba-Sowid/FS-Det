@@ -7,6 +7,7 @@ import numpy as np
 
 from collections import defaultdict
 from typing import List, Tuple
+from numpy.typing import NDArray
 from typing_extensions import  Self
 
 import torch
@@ -14,19 +15,164 @@ from torch.utils.data import Dataset, Subset, random_split, Sampler
 
 
 
-__all__ = ['ModelNet40C', 'ModelNet40CFewShot', 'FewShotBatchSampler', 'PointCloudDataset']
+__all__ = ['ModelNet40CFewShot', 'FewShotBatchSampler', 'PointCloudDataset', 'NPYDataset']
 
 
-class ModelNet40C(Dataset):
+# class ModelNet40C(Dataset):
+#     def __init__(self, data_path:str, label_path:str):
+#         self.point_clouds = np.load(data_path, allow_pickle=True)
+#         self.point_clouds =  np.swapaxes(self.point_clouds, 1, 2)
+#         self.labels_dict = np.load(label_path, allow_pickle=True)
+#         labels_ids: List[int] = [label.get('class_id') for label in self.labels_dict]
+#         self.labels_txt: List[str] = [label.get('class_name') for label in self.labels_dict]
+#         self.labels_ids = np.array(labels_ids).reshape(len(labels_ids), 1)
+
+
+#     def __getitem__(self, point_cloud_idx:int):
+#         sample =  self.point_clouds[point_cloud_idx]
+#         label = self.labels_ids[point_cloud_idx]
+
+#         return torch.tensor(sample), torch.tensor(label, dtype=torch.long)
+        
+#     def __len__(self) -> int:
+#         return len(self.point_clouds)
+
+#     def plot(self, point_cloud_idx:int):
+#         point_cloud = self.point_clouds[point_cloud_idx]
+#         x = point_cloud[:, 0]
+#         y = point_cloud[:, 1]
+#         z = point_cloud[:, 2]
+        
+#         fig = plt.figure(figsize=(9,7))
+#         ax = fig.add_subplot(projection='3d')
+#         img = ax.scatter(x, y, z, cmap=plt.hot())
+#         fig.colorbar(img)
+
+#         ax.set_xlabel('X')
+#         ax.set_ylabel('Y')
+#         ax.set_zlabel('Z')
+#         plt.savefig('vis')
+
+#     def remove_class(self, cls_index):
+#         indeces = np.where(self.labels_ids == cls_index)
+#         point_clouds = []
+#         for i in indeces:
+#             point_clouds.append(self.point_clouds[i])
+#             self.point_clouds = np.delete(self.point_clouds, i)
+#             self.labels_ids = np.delete(self.labels_ids, i)
+
+#         return point_clouds
+
+#     def train_val_test_split(self, train_ratio: float = 0.7, validation_ratio: float = 0.1) -> List[Subset[Self]]:
+#         train_size = int(train_ratio * self.__len__())
+#         remaining_size = self.__len__() - train_size
+#         validation_size = int(validation_ratio* remaining_size)
+#         test_size = remaining_size - validation_size
+
+#         return random_split(self , [train_size, validation_size, test_size])
+    
+#     def train_test_val_class_indices_split(self, train_ratio: float = 0.8, seed: int=42) -> Tuple[torch.Tensor, ...]:
+#         labels = self.labels_ids
+
+#         labels_size = len(np.unique(labels))
+#         train_size = int(train_ratio * labels_size)
+#         validation_size = int((labels_size - train_size)/ 2)
+
+#         torch.manual_seed(int(seed))
+#         classes = torch.randperm(labels_size)
+
+#         return classes[:train_size], classes[train_size:train_size+(validation_size)], classes[train_size+(validation_size):]
+    
+#     def labels_to_tensor(self) -> torch.Tensor:
+#         return torch.from_numpy(self.labels_ids)
+    
+#     def pcds_to_tensor(self) -> torch.Tensor:
+#         return torch.from_numpy(self.point_clouds)
+
+
+# class ShapeNet55C(Dataset):
+#     def __init__(self, data_path:str, label_path:str):
+#         self.point_clouds = np.load(data_path, allow_pickle=True)
+#         self.point_clouds =  np.swapaxes(self.point_clouds, 1, 2)
+#         self.labels_dict = np.load(label_path, allow_pickle=True)
+
+#         labels_ids: List[int] = [label.get('class_id') for label in self.labels_dict]
+#         labels_txt: List[str] = [label.get('class_name') for label in self.labels_dict]
+#         self.labels_ids: NDArray = np.array(labels_ids).reshape(len(labels_ids), 1)
+#         self.labels_txt: NDArray = np.array(labels_txt).reshape(len(labels_txt), 1)
+
+#     def __getitem__(self, point_cloud_idx:int):
+#         sample =  self.point_clouds[point_cloud_idx]
+#         label = self.labels_ids[point_cloud_idx]
+
+#         return torch.tensor(sample), torch.tensor(label, dtype=torch.long)
+        
+#     def __len__(self) -> int:
+#         return len(self.point_clouds)
+
+#     def plot(self, point_cloud_idx:int):
+#         point_cloud = self.point_clouds[point_cloud_idx]
+#         x = point_cloud[:, 0]
+#         y = point_cloud[:, 1]
+#         z = point_cloud[:, 2]
+        
+#         fig = plt.figure(figsize=(9,7))
+#         ax = fig.add_subplot(projection='3d')
+#         img = ax.scatter(x, y, z, cmap=plt.hot())
+#         fig.colorbar(img)
+
+#         ax.set_xlabel('X')
+#         ax.set_ylabel('Y')
+#         ax.set_zlabel('Z')
+
+#     def remove_class(self, cls_index):
+#         indeces = np.where(self.labels_ids == cls_index)
+#         point_clouds = []
+#         for i in indeces:
+#             point_clouds.append(self.point_clouds[i])
+#             self.point_clouds = np.delete(self.point_clouds, i)
+#             self.labels_ids = np.delete(self.labels_ids, i)
+#             self.labels_txt = np.delete(self.labels_txt, i)
+
+#         return point_clouds
+
+#     def labels_to_tensor(self) -> torch.Tensor:
+#         return torch.from_numpy(self.labels_ids)
+    
+#     def pcds_to_tensor(self) -> torch.Tensor:
+#         return torch.from_numpy(self.point_clouds)
+
+#     def train_test_val_class_indices_split(self, train_ratio: float = 0.8, seed: int=42) -> Tuple[torch.Tensor, ...]:
+#         labels = self.labels_ids
+
+#         labels_size = len(np.unique(labels))
+#         train_size = int(train_ratio * labels_size)
+#         validation_size = int((labels_size - train_size)/ 2)
+#         torch.manual_seed(int(seed))
+#         classes = torch.randperm(labels_size)
+
+#         return classes[:train_size], classes[train_size:train_size+(validation_size)], classes[train_size+(validation_size):]
+
+class NPYDataset(Dataset):
+    """"Responsible for reading the point cloud datasets that NPY format."""
 
     def __init__(self, data_path:str, label_path:str):
-        self.point_clouds = np.load(data_path)
+        """
+        data_path: the point cloud dataset path where the file is in form of .npy file and the size of the dataset is (n, num_points, pcd_channles) 
+        label_path: the corresponding label indices to its point cloud where the label is encoded into indices in range of [0,num_classes].
+        """
+        self.point_clouds = np.load(data_path, allow_pickle=True)
         self.point_clouds =  np.swapaxes(self.point_clouds, 1, 2)
-        self.labels = np.load(label_path)
+        self.labels_dict = np.load(label_path, allow_pickle=True)
+
+        labels_ids: List[int] = [label.get('class_id') for label in self.labels_dict]
+        labels_txt: List[str] = [label.get('class_name') for label in self.labels_dict]
+        self.labels_ids: NDArray = np.array(labels_ids).reshape(len(labels_ids), 1)
+        self.labels_txt: NDArray = np.array(labels_txt).reshape(len(labels_txt), 1)
 
     def __getitem__(self, point_cloud_idx:int):
         sample =  self.point_clouds[point_cloud_idx]
-        label = self.labels[point_cloud_idx]
+        label = self.labels_ids[point_cloud_idx]
 
         return torch.tensor(sample), torch.tensor(label, dtype=torch.long)
         
@@ -47,17 +193,23 @@ class ModelNet40C(Dataset):
         ax.set_xlabel('X')
         ax.set_ylabel('Y')
         ax.set_zlabel('Z')
-        plt.show()
 
     def remove_class(self, cls_index):
-        indeces = np.where(self.labels == cls_index)
+        indeces = np.where(self.labels_ids == cls_index)
         point_clouds = []
         for i in indeces:
             point_clouds.append(self.point_clouds[i])
             self.point_clouds = np.delete(self.point_clouds, i)
-            self.labels = np.delete(self.labels, i)
+            self.labels_ids = np.delete(self.labels_ids, i)
+            self.labels_txt = np.delete(self.labels_txt, i)
 
         return point_clouds
+
+    def labels_to_tensor(self) -> torch.Tensor:
+        return torch.from_numpy(self.labels_ids)
+    
+    def pcds_to_tensor(self) -> torch.Tensor:
+        return torch.from_numpy(self.point_clouds).float()
 
     def train_val_test_split(self, train_ratio: float = 0.7, validation_ratio: float = 0.1) -> List[Subset[Self]]:
         train_size = int(train_ratio * self.__len__())
@@ -66,24 +218,17 @@ class ModelNet40C(Dataset):
         test_size = remaining_size - validation_size
 
         return random_split(self , [train_size, validation_size, test_size])
-    
+
     def train_test_val_class_indices_split(self, train_ratio: float = 0.8, seed: int=42) -> Tuple[torch.Tensor, ...]:
-        labels = self.labels
+        labels = self.labels_ids
 
         labels_size = len(np.unique(labels))
         train_size = int(train_ratio * labels_size)
         validation_size = int((labels_size - train_size)/ 2)
-
         torch.manual_seed(int(seed))
         classes = torch.randperm(labels_size)
 
         return classes[:train_size], classes[train_size:train_size+(validation_size)], classes[train_size+(validation_size):]
-    
-    def labels_to_tensor(self) -> torch.Tensor:
-        return torch.from_numpy(self.labels)
-    
-    def pcds_to_tensor(self) -> torch.Tensor:
-        return torch.from_numpy(self.point_clouds)
 
 class PointCloudDataset(Dataset):
     def __init__(self, point_clouds: torch.Tensor, labels: torch.Tensor) -> None:
@@ -97,6 +242,16 @@ class PointCloudDataset(Dataset):
         class_mask = (all_labels[:, None] == label_indices[None, :]).any(dim=-1)
 
         return PointCloudDataset(point_clouds=all_point_clouds[class_mask.squeeze(), :], labels=all_labels[class_mask])
+    
+    @staticmethod
+    def from_pickle(file_name: str):
+        with open(file_name, 'rb') as dataset_file:
+            dataset  = pickle.load(dataset_file)
+        return dataset
+    
+    def save_dataset(self, file_name: str):
+        with open(file_name, 'wb') as dataset_file:
+            pickle.dump(self, dataset_file)
 
     def __getitem__(self, idx) -> Tuple[torch.Tensor, torch.Tensor]:
         return self.pcds[idx], self.labels[idx]
@@ -206,5 +361,3 @@ class ModelNet40CFewShot:
         ax.set_xlabel('X')
         ax.set_ylabel('Y')
         ax.set_zlabel('Z')
-        plt.show()
-

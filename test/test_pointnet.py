@@ -5,7 +5,7 @@ import torch.utils.data
 from tqdm import tqdm
 
 from config import Config
-from data_loader import ModelNet40C
+from data_loader import NPYDataset
 from models import PointNetCls
 
 def test(config_uri: str):
@@ -13,7 +13,7 @@ def test(config_uri: str):
     training_params = training_config.trainig_params
     dataset_params = training_config.dataset_params
 
-    dataset = ModelNet40C(dataset_params.dataset, dataset_params.label)
+    dataset = NPYDataset(dataset_params.dataset, dataset_params.label)
     
     _, test_set = dataset.train_val_test_split(training_params.training_split)
     test_data_loader = torch.utils.data.DataLoader(

@@ -3,7 +3,8 @@ from __future__ import annotations
 import matplotlib.pyplot as plt
 import seaborn as sns
 from statistics import mean, stdev
-
+import numpy as np
+from numpy.typing import NDArray
 from tqdm import tqdm
 
 import torch
@@ -11,11 +12,18 @@ import torch.utils.data
 from torch.utils.data import DataLoader
 
 from models import ProtoNet
-from data_loader import PointCloudDataset, ModelNet40C
+from data_loader import PointCloudDataset, NPYDataset
 from config import Config
 
 def test(model: ProtoNet, dataset: PointCloudDataset, k_shot: int, batch_size: int, num_worker: int):
-    num_classes = (dataset.labels.unique().shape[0]) -1
+    num_classes = (dataset.labels.unique().shape[0])
+    
+
+    if dataset.labels.shape[0]%num_classes == 0:
+        num_classes = (dataset.labels.unique().shape[0])
+    else:
+        num_classes = (dataset.labels.unique().shape[0]) -1
+
     exmps_per_class = dataset.labels.shape[0] // num_classes
 
     with torch.no_grad():
@@ -27,7 +35,7 @@ def test(model: ProtoNet, dataset: PointCloudDataset, k_shot: int, batch_size: i
         pcd_targets = []
 
         for pcds, targets in tqdm(test_loader, "Extracting point cloud features"):
-            pcds = pcds.to(model.device)
+            pcds = pcds.to(model.device).float().cuda()
             features = model(pcds)
 
             pcd_features.append(features.detach().cpu())
@@ -41,6 +49,7 @@ def test(model: ProtoNet, dataset: PointCloudDataset, k_shot: int, batch_size: i
         pcd_features = pcd_features[sort_idx].view(num_classes, exmps_per_class, -1).transpose(0, 1)
 
     accuracies = []
+    predicted_targets = []
     for k_idx in tqdm(range(0, pcd_features.shape[0], k_shot), "Evaluating prototype classification", leave=False):
         # Select support set and calculate prototypes
         k_pcd_feats = pcd_features[k_idx : k_idx + k_shot].flatten(0, 1)
@@ -54,13 +63,15 @@ def test(model: ProtoNet, dataset: PointCloudDataset, k_shot: int, batch_size: i
             e_pcd_feats = pcd_features[e_idx : e_idx + k_shot].flatten(0, 1)
             e_targets = pcd_targets[e_idx : e_idx + k_shot].flatten(0, 1)
 
-            _, _, acc = model.classify_features(prototypes, proto_classes, e_pcd_feats, e_targets)
+            predicted, _, acc = model.classify_features(prototypes, proto_classes, e_pcd_feats, e_targets)
             batch_acc += acc.item()
-
+            print(k_idx)
+            print(predicted.shape)
+            predicted_targets.append(predicted.cpu().numpy())
         batch_acc /= pcd_features.shape[0] // k_shot - 1
         accuracies.append(batch_acc)
 
-    return (mean(accuracies), stdev(accuracies)), (pcd_features, pcd_targets)
+    return (mean(accuracies), stdev(accuracies)), (pcd_features, pcd_targets, predicted_targets)
 
 def plot_few_shot(acc_dict, name, color=None, ax=None):
     sns.set()
@@ -95,7 +106,8 @@ def prepare_dataset(config: Config):
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    dataset = ModelNet40C(dataset_params.dataset, dataset_params.label)
+    dataset = NPYDataset(dataset_params.dataset, dataset_params.label)
+
     test_set = PointCloudDataset(dataset.pcds_to_tensor(), dataset.labels_to_tensor())
 
     model = ProtoNet(dataset_params.num_classes, device=device)
@@ -103,15 +115,42 @@ def prepare_dataset(config: Config):
 
     test_proto(model, test_set, test_params.k_shots, dataset_params.batch_size, dataset_params.data_loader_num_workers)
 
+def plot_test_results(test_set: PointCloudDataset, predicted_targets: list[NDArray]):
+    fig = plt.figure(figsize=(12,4))
+    # labels = test_set.labels.cpu().numpy()
+    # print("target " ,len(predicted_targets))
+
+
+    # for i, (actual, predicted) in enumerate(zip(labels[:5], predicted_targets[:5])):
+    #     print(actual, "-", np.argmax(predicted, axis=1).shape)
+    #     point_cloud = test_set.pcds[i]
+    #     x = point_cloud[0, :]
+    #     y = point_cloud[1, :]
+    #     z = point_cloud[2, :]
+
+    #     ax = fig.add_subplot(1, 5, i+1, projection='3d')
+
+    #     img = ax.scatter(x, y, z, cmap=plt.hot())
+    #     # fig.colorbar(img)
+    #     ax.set_xlabel('X')
+    #     ax.set_ylabel('Y')
+    #     ax.set_zlabel('Z')
+    # plt.show()
+
 def test_proto(model: ProtoNet, test_set: PointCloudDataset, k_shots: list[int], batch_size: int, num_worker: int):
     print('===========Begin testing=============')
     protonet_accuracies = dict()
 
     for k in k_shots:
         protonet_accuracies[k], data_feats = test(model, test_set, k, batch_size, num_worker)
+        _, actual_target, predicted_targets = data_feats
         print(
             "Accuracy for k=%i: %4.2f%% (+-%4.2f%%)"
-            % (k, 100.0 * protonet_accuracies[k][0], 100 * protonet_accuracies[k][1])
-        )
+            % (k, 100.0 * protonet_accuracies[k][0], 100 * protonet_accuracies[k][1]))
+        # if(k ==5):
+            # plot_test_results(actual_target, predicted_targets)
+
 
     plot_few_shot(protonet_accuracies, 'ProtoNet')
+
+

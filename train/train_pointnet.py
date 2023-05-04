@@ -5,7 +5,7 @@ import torch.utils.data
 import torch.optim as optim
 
 from config import Config
-from data_loader import ModelNet40C
+from data_loader import NPYDataset
 from models import PointNetCls
 
 def train(config: Config):
@@ -14,7 +14,7 @@ def train(config: Config):
 
     torch.manual_seed(training_params.seed)
 
-    dataset = ModelNet40C(dataset_params.dataset, dataset_params.label)
+    dataset = NPYDataset(dataset_params.dataset, dataset_params.label)
 
     train_set, _, _= dataset.train_val_test_split(train_ratio=training_params.training_split)
 
