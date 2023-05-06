@@ -1,15 +1,15 @@
 TRAINING:
   seed: 42
   train_ratio: 0.8
-  epochs: 130
+  epochs: 50
   learning_rate: 0.0005
   scheduler_step: 10
   scheduler_gamma: 0.1
-  check_point_uri: 'ckpts/proto_net_40/proto_net_4'
+  check_point_uri: 'ckpt/shapenet/pointnet1_ckpt'
 
 FEWSHOT:
   n_ways: 5
-  k_shots: 10
+  k_shots: 5
   n_tasks: 10
   test_k_shots: [5, 10, 15, 20]
 
@@ -19,7 +19,7 @@ DATASET:
   # label_source: 'data/shape_net_55/shape_net_labels.npy'
   dataset_source : 'data/model_net_40c/data_original.npy'
   label_source: 'data/model_net_40c/model_net_labels.npy'
-  num_classes: 40
+  num_classes: 55
   data_loader_num_workers: 5
   batch_size: 34
 

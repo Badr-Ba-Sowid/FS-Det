@@ -139,11 +139,11 @@ class PointNetEncoder(nn.Module):
         self.relu = nn.ReLU()
 
     def forward(self, x):
-        x = x.to(self.fc1.weight.device)
+        # x = x.to(self.fc1.weight.device)
         x, _, _ = self.feat(x)
-        x = F.relu(self.bn1(self.fc1(x)))
-        x = F.relu(self.bn2(self.dropout(self.fc2(x))))
-        x = self.fc3(x)
+        # x = F.relu(self.bn1(self.fc1(x)))
+        # x = F.relu(self.bn2(self.dropout(self.fc2(x))))
+        # x = self.fc3(x)
         return x
 
 class PointNetCls(nn.Module):

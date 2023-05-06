@@ -62,7 +62,7 @@ class Config:
 
     def _parse_training_params(self, config: dict[str, Any]) -> TrainingParams:
         return TrainingParams(seed=int(config.get('seed', 42)),
-                            training_split=float(config.get('training_split', 0.7)),
+                            training_split=float(config.get('train_ratio', 0.7)),
                             epochs=int(config.get('epochs', 50)),
                             learning_rate=float(config.get('learning_rate', 0.001)),
                             scheduler_steps=int(config.get('scheduler_step', 10)),

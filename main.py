@@ -4,7 +4,7 @@ import sys
 
 from click import prompt
 
-from train.train_pointnet import train as pointtnet_train
+from train.train_pointnet import point_net_train as pointtnet_train
 from test.test_protonet import prepare_dataset as protonet_test
 from test.test_pointnet import test as pointnet_test
 from train.train_protonet import train as protonet_train
@@ -22,6 +22,8 @@ logger.addHandler(ch)
 def run_test(config: Config):
     logger.info(msg='=================Testing begins====================')
     pass
+
+
 
 
 if __name__ == "__main__":
