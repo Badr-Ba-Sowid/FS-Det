@@ -5,10 +5,10 @@ import yaml
 
 from dataclasses import dataclass
 
-from typing import Any
+from typing import Any, Optional
 from typing_extensions import Self
 
-__all__ = ['Config']
+__all__ = ['Config', 'DatasetParams']
 
 @dataclass
 class TrainingParams:
@@ -19,6 +19,7 @@ class TrainingParams:
     scheduler_steps: int
     scheduler_gamma: float
     ckpts: str
+    pretrained_uri: Optional[str]
 
 @dataclass
 class TestingParams:
@@ -42,6 +43,7 @@ class DatasetParams:
     text_label_source: str
     data_loader_num_workers: int
     batch_size: int
+    experiment_result_uri: str
 
 
 class Config:
@@ -67,8 +69,8 @@ class Config:
                             learning_rate=float(config.get('learning_rate', 0.001)),
                             scheduler_steps=int(config.get('scheduler_step', 10)),
                             scheduler_gamma=float(config.get('scheduler_gamma', 0.1)),
-                            ckpts=(config.get('check_point_uri', ''))
-
+                            ckpts=(config.get('check_point_uri', '')),
+                            pretrained_uri=(config.get('pretrained_uri', None)),
                 )
 
     def _parse_few_shot_params(self, config: dict[str, Any]) -> FewShotParams:
@@ -86,6 +88,7 @@ class Config:
                                 label=(config.get('label_source', '')),
                                 data_loader_num_workers=int(config.get('data_loader_num_workers', 1)),
                                 batch_size=int(config.get('batch_size', 10)),
+                                experiment_result_uri=str(config.get('experiment_result_uri', ''))
                 )
 
     def _parse_testing_params(self, config: dict[str, Any]) -> TestingParams:

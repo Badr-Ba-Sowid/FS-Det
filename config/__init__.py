@@ -1,3 +1,3 @@
-__all__ = ['Config']
+__all__ = ['Config', 'DatasetParams']
 
-from .config import Config
+from .config import Config, DatasetParams
