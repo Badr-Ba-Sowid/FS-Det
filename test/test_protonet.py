@@ -3,8 +3,10 @@ from __future__ import annotations
 import matplotlib.pyplot as plt
 import seaborn as sns
 from statistics import mean, stdev
-import numpy as np
+
 from numpy.typing import NDArray
+from typing import List
+
 from tqdm import tqdm
 
 import torch
@@ -13,7 +15,7 @@ from torch.utils.data import DataLoader
 
 from models import ProtoNet
 from data_loader import PointCloudDataset, NPYDataset
-from config import Config
+from config import Config, DatasetParams
 
 def test(model: ProtoNet, dataset: PointCloudDataset, k_shot: int, batch_size: int, num_worker: int):
     num_classes = (dataset.labels.unique().shape[0])
@@ -65,15 +67,14 @@ def test(model: ProtoNet, dataset: PointCloudDataset, k_shot: int, batch_size: i
 
             predicted, _, acc = model.classify_features(prototypes, proto_classes, e_pcd_feats, e_targets)
             batch_acc += acc.item()
-            print(k_idx)
-            print(predicted.shape)
+
             predicted_targets.append(predicted.cpu().numpy())
         batch_acc /= pcd_features.shape[0] // k_shot - 1
         accuracies.append(batch_acc)
 
     return (mean(accuracies), stdev(accuracies)), (pcd_features, pcd_targets, predicted_targets)
 
-def plot_few_shot(acc_dict, name, color=None, ax=None):
+def plot_few_shot(acc_dict, name, color=None, ax=None, root_director: str='', ds_name: str='unknown_ds'):
     sns.set()
     if ax is None:
         fig, ax = plt.subplots(1, 1, figsize=(15, 10))
@@ -97,8 +98,8 @@ def plot_few_shot(acc_dict, name, color=None, ax=None):
     else:
         ax.set_title(ax.get_title() + " and " + name, weight="bold")
     ax.legend()
-    
-    plt.savefig('few_shot_performance')
+
+    plt.savefig(f'{root_director}/fewshot_performance_{ds_name}')
 
 def prepare_dataset(config: Config):
     dataset_params = config.dataset_params
@@ -113,7 +114,7 @@ def prepare_dataset(config: Config):
     model = ProtoNet(dataset_params.num_classes, device=device)
     model.load_state_dict(torch.load(test_params.model_state))
 
-    test_proto(model, test_set, test_params.k_shots, dataset_params.batch_size, dataset_params.data_loader_num_workers)
+    test_proto(model, test_set, test_params.k_shots, dataset_params)
 
 def plot_test_results(test_set: PointCloudDataset, predicted_targets: list[NDArray]):
     fig = plt.figure(figsize=(12,4))
@@ -137,12 +138,12 @@ def plot_test_results(test_set: PointCloudDataset, predicted_targets: list[NDArr
     #     ax.set_zlabel('Z')
     # plt.show()
 
-def test_proto(model: ProtoNet, test_set: PointCloudDataset, k_shots: list[int], batch_size: int, num_worker: int):
-    print('===========Begin testing=============')
+def test_proto(model: ProtoNet, test_set: PointCloudDataset, k_shots: List[int], dataset_params: DatasetParams):
+    print(f'===========Begin testing on {dataset_params.name}=============')
     protonet_accuracies = dict()
 
     for k in k_shots:
-        protonet_accuracies[k], data_feats = test(model, test_set, k, batch_size, num_worker)
+        protonet_accuracies[k], data_feats = test(model, test_set, k, dataset_params.batch_size, dataset_params.data_loader_num_workers)
         _, actual_target, predicted_targets = data_feats
         print(
             "Accuracy for k=%i: %4.2f%% (+-%4.2f%%)"
@@ -150,7 +151,6 @@ def test_proto(model: ProtoNet, test_set: PointCloudDataset, k_shots: list[int],
         # if(k ==5):
             # plot_test_results(actual_target, predicted_targets)
 
-
-    plot_few_shot(protonet_accuracies, 'ProtoNet')
+    plot_few_shot(protonet_accuracies, 'ProtoNet', root_director=dataset_params.experiment_result_uri, ds_name=dataset_params.name)
 
 

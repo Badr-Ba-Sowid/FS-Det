@@ -206,10 +206,10 @@ class NPYDataset(Dataset):
         return point_clouds
 
     def labels_to_tensor(self) -> torch.Tensor:
-        return torch.from_numpy(self.labels_ids)
+        return torch.from_numpy(self.labels_ids).float()
     
     def pcds_to_tensor(self) -> torch.Tensor:
-        return torch.from_numpy(self.point_clouds).float()
+        return torch.from_numpy(self.point_clouds)
 
     def train_val_test_split(self, train_ratio: float = 0.7, validation_ratio: float = 0.1) -> List[Subset[Self]]:
         train_size = int(train_ratio * self.__len__())

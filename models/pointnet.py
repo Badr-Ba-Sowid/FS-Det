@@ -7,7 +7,7 @@ from torch.autograd import Variable
 import numpy as np
 import torch.nn.functional as F
 
-__all__ = ['PointNetCls', 'PointNetEncoder']
+__all__ = ['PointNetCls', 'PointNetEncoder', 'PointNetfeat']
 class STN3d(nn.Module):
     def __init__(self):
         super(STN3d, self).__init__()
@@ -139,7 +139,6 @@ class PointNetEncoder(nn.Module):
         self.relu = nn.ReLU()
 
     def forward(self, x):
-        x = x.to(self.fc1.weight.device)
         x, _, _ = self.feat(x)
         x = F.relu(self.bn1(self.fc1(x)))
         x = F.relu(self.bn2(self.dropout(self.fc2(x))))
