@@ -140,13 +140,13 @@ class PointNetEncoder(nn.Module):
 
     def forward(self, x):
         x, _, _ = self.feat(x)
-        # x = F.relu(self.bn1(self.fc1(x)))
-        # x = F.relu(self.bn2(self.dropout(self.fc2(x))))
-        # x = self.fc3(x)
+        x = F.relu(self.bn1(self.fc1(x)))
+        x = F.relu(self.bn2(self.dropout(self.fc2(x))))
+        x = self.fc3(x)
         return x
 
 class PointNetCls(nn.Module):
-    def __init__(self, k=2, feature_transform=False):
+    def __init__(self, k, feature_transform=False):
         super(PointNetCls, self).__init__()
         self.feature_transform = feature_transform
         self.feat = PointNetfeat(global_feat=True, feature_transform=feature_transform)

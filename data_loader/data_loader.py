@@ -174,7 +174,7 @@ class NPYDataset(Dataset):
         sample =  self.point_clouds[point_cloud_idx]
         label = self.labels_ids[point_cloud_idx]
 
-        return torch.tensor(sample), torch.tensor(label, dtype=torch.long)
+        return torch.tensor(sample).float(), torch.tensor(label, dtype=torch.long)
         
     def __len__(self) -> int:
         return len(self.point_clouds)
@@ -206,10 +206,10 @@ class NPYDataset(Dataset):
         return point_clouds
 
     def labels_to_tensor(self) -> torch.Tensor:
-        return torch.from_numpy(self.labels_ids).float()
-    
+        return torch.from_numpy(self.labels_ids)
+
     def pcds_to_tensor(self) -> torch.Tensor:
-        return torch.from_numpy(self.point_clouds)
+        return torch.from_numpy(self.point_clouds).float()
 
     def train_val_test_split(self, train_ratio: float = 0.7, validation_ratio: float = 0.1) -> List[Subset[Self]]:
         train_size = int(train_ratio * self.__len__())
@@ -242,7 +242,7 @@ class PointCloudDataset(Dataset):
         class_mask = (all_labels[:, None] == label_indices[None, :]).any(dim=-1)
 
         return PointCloudDataset(point_clouds=all_point_clouds[class_mask.squeeze(), :], labels=all_labels[class_mask])
-    
+
     @staticmethod
     def from_pickle(file_name: str):
         with open(file_name, 'rb') as dataset_file:

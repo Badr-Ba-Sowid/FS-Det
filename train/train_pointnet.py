@@ -7,10 +7,11 @@ import torch.optim as optim
 from config import Config
 from data_loader import NPYDataset
 from models import PointNetCls
-from tqdm import tqdm
 from utils.plot import plot_train_test_data
+from test.test_pointnet import test
 
-def point_net_train(config):
+
+def point_net_train(config: Config):
 
     training_params = config.trainig_params
     dataset_params = config.dataset_params
@@ -61,23 +62,6 @@ def point_net_train(config):
     # accuracy = test(classifier, test_data_loader, loss_fn)
     # print("Final accuracy ", accuracy)
 
-
-def test(model, data_loader, loss_fn):
-    model.eval()
-    total_correct = 0
-    total_loss = 0
-
-    for _, data in tqdm(enumerate(data_loader, 0)):
-        point_cloud, label = data
-        point_cloud, label = point_cloud.cuda(), label.cuda()
-
-        pred, _, _ = model(point_cloud)
-        total_loss += loss_fn(pred, torch.flatten(label)).item()
-        pred_choice = pred.data.max(1)[1]
-        correct = pred_choice.eq(torch.flatten(label)).sum().item()
-        total_correct += correct
-    accuracy = total_correct / len(data_loader.dataset)
-    return accuracy, total_loss / len(data_loader)
 
 
 def train(model, train_data_loader, val_data_loader,
