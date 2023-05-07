@@ -35,8 +35,10 @@ def test(model: ProtoNet, dataset: PointCloudDataset, k_shot: int, batch_size: i
 
         pcd_features = []
         pcd_targets = []
+        pcd_samples = []
 
         for pcds, targets in tqdm(test_loader, "Extracting point cloud features"):
+            pcd_samples.append(pcds.cpu().numpy())
             pcds = pcds.to(model.device).float().cuda()
             features = model(pcds)
 
@@ -65,14 +67,16 @@ def test(model: ProtoNet, dataset: PointCloudDataset, k_shot: int, batch_size: i
             e_pcd_feats = pcd_features[e_idx : e_idx + k_shot].flatten(0, 1)
             e_targets = pcd_targets[e_idx : e_idx + k_shot].flatten(0, 1)
 
-            predicted, _, acc = model.classify_features(prototypes, proto_classes, e_pcd_feats, e_targets)
+            logits, _, acc = model.classify_features(prototypes, proto_classes, e_pcd_feats, e_targets)
             batch_acc += acc.item()
+
+            predicted = logits.argmax(dim=1)
 
             predicted_targets.append(predicted.cpu().numpy())
         batch_acc /= pcd_features.shape[0] // k_shot - 1
         accuracies.append(batch_acc)
 
-    return (mean(accuracies), stdev(accuracies)), (pcd_features, pcd_targets, predicted_targets)
+    return (mean(accuracies), stdev(accuracies)), (pcd_samples, pcd_targets, predicted_targets)
 
 def plot_few_shot(acc_dict, name, color=None, ax=None, root_director: str='', ds_name: str='unknown_ds'):
     sns.set()
@@ -106,37 +110,46 @@ def prepare_dataset(config: Config):
     test_params = config.testing_params
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    print(device)
 
-    dataset = NPYDataset(dataset_params.dataset, dataset_params.label)
+    device_ids =[0,1,2]
+    if test_params.dataset_path is None:
+        dataset = NPYDataset(dataset_params.dataset, dataset_params.label)
 
-    test_set = PointCloudDataset(dataset.pcds_to_tensor(), dataset.labels_to_tensor())
+        test_set = PointCloudDataset(dataset.pcds_to_tensor(), dataset.labels_to_tensor())
+    else:
+        test_set = PointCloudDataset.from_pickle(test_params.dataset_path)
 
     model = ProtoNet(dataset_params.num_classes, device=device)
     model.load_state_dict(torch.load(test_params.model_state))
 
     test_proto(model, test_set, test_params.k_shots, dataset_params)
 
-def plot_test_results(test_set: PointCloudDataset, predicted_targets: list[NDArray]):
+def plot_test_results(point_cloud: list[NDArray], labels: list[NDArray], predicted_targets: list[NDArray]):
+    print(len(labels))
+    print(len(predicted_targets))
     fig = plt.figure(figsize=(12,4))
     # labels = test_set.labels.cpu().numpy()
     # print("target " ,len(predicted_targets))
 
 
-    # for i, (actual, predicted) in enumerate(zip(labels[:5], predicted_targets[:5])):
-    #     print(actual, "-", np.argmax(predicted, axis=1).shape)
-    #     point_cloud = test_set.pcds[i]
-    #     x = point_cloud[0, :]
-    #     y = point_cloud[1, :]
-    #     z = point_cloud[2, :]
+    for i, (actual, predicted) in enumerate(zip(labels[:5], predicted_targets[:5])):
+        print(actual)
+        print(predicted)
+        pcd = point_cloud[5:][i]
+        print(pcd.shape)
+        x = pcd[:, 0]
+        y = pcd[:, 1]
+        z = pcd[:, 2]
 
-    #     ax = fig.add_subplot(1, 5, i+1, projection='3d')
+        ax = fig.add_subplot(1, 5, i+1, projection='3d')
 
-    #     img = ax.scatter(x, y, z, cmap=plt.hot())
-    #     # fig.colorbar(img)
-    #     ax.set_xlabel('X')
-    #     ax.set_ylabel('Y')
-    #     ax.set_zlabel('Z')
-    # plt.show()
+        img = ax.scatter(xs=x, ys=y, zs=z, cmap=plt.hot()) # type: ignore
+        fig.colorbar(img)
+        ax.set_xlabel('X')
+        ax.set_ylabel('Y')
+        ax.set_zlabel('Z')
+    plt.savefig('testing_plot')
 
 def test_proto(model: ProtoNet, test_set: PointCloudDataset, k_shots: List[int], dataset_params: DatasetParams):
     print(f'===========Begin testing on {dataset_params.name}=============')
@@ -144,12 +157,12 @@ def test_proto(model: ProtoNet, test_set: PointCloudDataset, k_shots: List[int],
 
     for k in k_shots:
         protonet_accuracies[k], data_feats = test(model, test_set, k, dataset_params.batch_size, dataset_params.data_loader_num_workers)
-        _, actual_target, predicted_targets = data_feats
+        point_cloud_sample, actual_target, predicted_targets = data_feats
         print(
             "Accuracy for k=%i: %4.2f%% (+-%4.2f%%)"
             % (k, 100.0 * protonet_accuracies[k][0], 100 * protonet_accuracies[k][1]))
         # if(k ==5):
-            # plot_test_results(actual_target, predicted_targets)
+        #     plot_test_results(point_cloud_sample, actual_target, predicted_targets)
 
     plot_few_shot(protonet_accuracies, 'ProtoNet', root_director=dataset_params.experiment_result_uri, ds_name=dataset_params.name)
 

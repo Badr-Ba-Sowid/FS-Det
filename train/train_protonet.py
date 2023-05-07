@@ -65,6 +65,8 @@ def train(config: Config):
     validation_set = PointCloudDataset.from_dataset(dataset.pcds_to_tensor(), dataset.labels_to_tensor(), validation_cls_idx)
     test_set = PointCloudDataset.from_dataset(dataset.pcds_to_tensor(), dataset.labels_to_tensor(), test_cls_idx)
 
+    # test_set.save_dataset(f'data/model_net_40c/{dataset_params.name}')
+
     train_batch_sampler = FewShotBatchSampler(train_set.labels, n_ways=few_shot_params.n_ways, k_shots=few_shot_params.k_shots, include_query=True)
     val_batch_sampler = FewShotBatchSampler(validation_set.labels, n_ways=few_shot_params.n_ways, k_shots=few_shot_params.k_shots, include_query=True)
 
