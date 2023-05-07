@@ -4,3 +4,4 @@ tqdm
 click
 yaml
 seaborn
+scikit-learn

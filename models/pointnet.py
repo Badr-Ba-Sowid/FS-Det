@@ -191,10 +191,9 @@ class PointNetEncoder(nn.Module):
         x, _, _ = self.feat(x)
         if self.use_attention:
             x = self.att_learner(x)
-        print("after attention ", x.shape)
-        x = F.relu(self.bn1(self.fc1(x)))
-        x = F.relu(self.bn2(self.dropout(self.fc2(x))))
-        x = self.fc3(x)
+        # x = F.relu(self.bn1(self.fc1(x)))
+        # x = F.relu(self.bn2(self.dropout(self.fc2(x))))
+        # x = self.fc3(x)
         return x
 
 class PointNetCls(nn.Module):
