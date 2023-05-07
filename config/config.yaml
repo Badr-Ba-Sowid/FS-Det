@@ -5,27 +5,27 @@ TRAINING:
   learning_rate: 0.0005
   scheduler_step: 10
   scheduler_gamma: 0.1
-  check_point_uri: 'ckpts/mode_net_40/proto_net'
+  check_point_uri: 'ckpts/proto/modelnet_attention'
   pretrained_uri: 'ckpts/mode_net_40/model_net_40'
+  attention: True
 
 FEWSHOT:
-  n_ways: 10
-  k_shots: 10
+  n_ways: 3
+  k_shots: 5
   n_tasks: 10
   test_k_shots: [5, 10, 15, 20]
 
 DATASET:
-  name: 'ModelNet40'
-  # dataset_source : 'data/shape_net_55/preprocessed_shapenet/shape_net_pcd.npy'
-  # label_source: 'data/shape_net_55/preprocessed_shapenet/shape_net_labels.npy'
+  name: 'ModelNet55'
+  # dataset_source : 'data/shapenet/preprocessed_shapenet/shape_net_pcd.npy'
+  # label_source: 'data/shapenet/preprocessed_shapenet/shape_net_labels.npy'
   dataset_source : 'data/model_net_40c/data_original.npy'
   label_source: 'data/model_net_40c/model_net_labels.npy'
-  num_classes: 55
-  data_loader_num_workers: 5
-  batch_size: 64
+  num_classes: 40
+  data_loader_num_workers: 1
+  batch_size: 2
   experiment_result_uri: 'experiment_results'
 
-
 TESTING:
-  model_state: 'ckpts/mode_net_40/proto_net_40/proto_net_7'
+  model_state: 'ckpts/shapenet/pointnet1_ckpt'
   dataset_path: 'data/test_set/proto_net_test.pickle'

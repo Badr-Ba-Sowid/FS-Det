@@ -19,7 +19,7 @@ def test_ckpt(config: Config):
     accuracy, total_loss = test(model, data_loader, loss_fn=F.nll_loss)
     print("=============Results 🙅‍♂️=============")
     print("Accuracy : ", accuracy)
-
+ 
 def prepare_dataloader(dataset_params):
     dataset = NPYDataset(dataset_params.dataset, dataset_params.label)
     return torch.utils.data.DataLoader(

@@ -20,6 +20,7 @@ class TrainingParams:
     scheduler_gamma: float
     ckpts: str
     pretrained_uri: Optional[str]
+    attention: bool
 
 @dataclass
 class TestingParams:
@@ -71,6 +72,7 @@ class Config:
                             scheduler_gamma=float(config.get('scheduler_gamma', 0.1)),
                             ckpts=(config.get('check_point_uri', '')),
                             pretrained_uri=(config.get('pretrained_uri', None)),
+                            attention=(config.get('attention', False))
                 )
 
     def _parse_few_shot_params(self, config: dict[str, Any]) -> FewShotParams:
