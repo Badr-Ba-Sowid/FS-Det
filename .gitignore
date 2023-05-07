@@ -2,5 +2,5 @@ __pycache__/
 
 data/
 ckpts/
-
+config/
 .vscode/

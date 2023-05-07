@@ -20,7 +20,7 @@ DATASET:
   # label_source: 'data/shape_net_55/preprocessed_shapenet/shape_net_labels.npy'
   dataset_source : 'data/model_net_40c/data_original.npy'
   label_source: 'data/model_net_40c/model_net_labels.npy'
-  num_classes: 40
+  num_classes: 55
   data_loader_num_workers: 5
   batch_size: 64
   experiment_result_uri: 'experiment_results'
