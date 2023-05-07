@@ -23,7 +23,7 @@ class TrainingParams:
 
 @dataclass
 class TestingParams:
-    dataset_path:str
+    dataset_path: Optional[str]
     model_state: str
     k_shots: list[int]
 
@@ -92,6 +92,6 @@ class Config:
                 )
 
     def _parse_testing_params(self, config: dict[str, Any]) -> TestingParams:
-        return TestingParams(dataset_path = str(config.get('dataset_path')),
-                                model_state=str(config.get('model_state', '')),
+        return TestingParams(dataset_path =(config.get('dataset_path', None)),
+                                model_state=(config.get('model_state', '')),
                                 k_shots=self.few_shot_params.test_k_shots)

@@ -53,7 +53,7 @@ def train(config: Config):
     dataset_params.name = f'{dataset_params.name}_{few_shot_params.n_ways}_{few_shot_params.k_shots}'
     dataset_params.batch_size = few_shot_params.n_ways*few_shot_params.k_shots
 
-    model = ProtoNet(num_classes=dataset_params.num_classes, device=device, pretrained_ckpts=None)
+    model = ProtoNet(num_classes=dataset_params.num_classes, device=device, pretrained_ckpts=training_params.pretrained_uri)
 
     dataset = NPYDataset(dataset_params.dataset, dataset_params.label)
 
@@ -65,6 +65,8 @@ def train(config: Config):
     train_set = PointCloudDataset.from_dataset(dataset.pcds_to_tensor(), dataset.labels_to_tensor(), train_cls_idx)
     validation_set = PointCloudDataset.from_dataset(dataset.pcds_to_tensor(), dataset.labels_to_tensor(), validation_cls_idx)
     test_set = PointCloudDataset.from_dataset(dataset.pcds_to_tensor(), dataset.labels_to_tensor(), test_cls_idx)
+
+    # test_set.save_dataset(f'data/model_net_40c/{dataset_params.name}')
 
     train_batch_sampler = FewShotBatchSampler(train_set.labels, n_ways=few_shot_params.n_ways, k_shots=few_shot_params.k_shots, include_query=True)
     val_batch_sampler = FewShotBatchSampler(validation_set.labels, n_ways=few_shot_params.n_ways, k_shots=few_shot_params.k_shots, include_query=True)
