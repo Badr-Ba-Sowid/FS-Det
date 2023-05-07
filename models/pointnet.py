@@ -125,8 +125,53 @@ class PointNetfeat(nn.Module):
             return torch.cat([x, pointfeat], 1), trans, trans_feat
 
 
+class SelfAttention(nn.Module):
+    def __init__(self, in_channel, out_channel=None, attn_dropout=0.1):
+        """
+        :param in_channel: previous layer's output feature dimension
+        :param out_channel: size of output vector, defaults to in_channel
+        """
+        super(SelfAttention, self).__init__()
+        self.in_channel = in_channel
+
+        if out_channel is not None:
+            self.out_channel = out_channel
+        else:
+            self.out_channel = in_channel
+
+        self.temperature = self.out_channel ** 0.5
+
+        self.query = nn.Conv1d(40, 1024, 1, bias=False)
+        self.key = nn.Conv1d(40, 1024, 1, bias=False)
+        self.value = nn.Conv1d(40, 1024, 1, bias=False)
+
+        self.dropout = nn.Dropout(attn_dropout)
+
+    def forward(self, x):
+        """
+        :param x: the feature maps from previous layer,
+                      shape: (batch_size, in_channel, num_points)
+        :return: y: attentioned features maps,
+                        shape： (batch_size, out_channel, num_points)
+        """
+        batch_size, num_points = x.shape
+
+        q = self.query(x)
+        k = self.key(x)
+        v = self.value(x)
+        print(q.shape)
+        print(k.shape)
+
+        attn = torch.matmul(q.T / self.temperature, k)
+        attn = self.dropout(F.softmax(attn, dim=-1))
+        # (batch_size, num_points, out_channel)
+        y = torch.matmul(attn, v.T)
+
+        return y.T
+
+
 class PointNetEncoder(nn.Module):
-    def __init__(self, k = 2, feature_transform=False):
+    def __init__(self, k = 2, feature_transform=False,  use_attention=False):
         super(PointNetEncoder, self).__init__()
         self.feature_transform = feature_transform
         self.feat = PointNetfeat(global_feat=True, feature_transform=feature_transform)
@@ -138,15 +183,22 @@ class PointNetEncoder(nn.Module):
         self.bn2 = nn.BatchNorm1d(256)
         self.relu = nn.ReLU()
 
+        self.use_attention = use_attention
+        if(self.use_attention):
+            self.att_learner = SelfAttention(k)
+
     def forward(self, x):
         x, _, _ = self.feat(x)
+        if self.use_attention:
+            x = self.att_learner(x)
+        print("after attention ", x.shape)
         x = F.relu(self.bn1(self.fc1(x)))
         x = F.relu(self.bn2(self.dropout(self.fc2(x))))
         x = self.fc3(x)
         return x
 
 class PointNetCls(nn.Module):
-    def __init__(self, k=2, feature_transform=False):
+    def __init__(self, k, feature_transform=False):
         super(PointNetCls, self).__init__()
         self.feature_transform = feature_transform
         self.feat = PointNetfeat(global_feat=True, feature_transform=feature_transform)

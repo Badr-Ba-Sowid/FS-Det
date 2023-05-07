@@ -12,9 +12,9 @@ __all__ = ['ProtoNet']
 
 
 class ProtoNet(nn.Module):
-    def __init__(self, num_classes: int, device: torch.device, pretrained_ckpts: Optional[str]=None) -> None:
+    def __init__(self, num_classes: int, device: torch.device, pretrained_ckpts: Optional[str]=None, use_attention: bool=False) -> None:
         super(ProtoNet, self).__init__()
-        self.encoder = PointNetEncoder(num_classes)
+        self.encoder = PointNetEncoder(num_classes, use_attention)
         self.encoder.to(device)
         self.device = device
 
@@ -23,7 +23,8 @@ class ProtoNet(nn.Module):
             self.encoder.load_state_dict(pretrained_dict)
 
     def forward(self, x):
-        return self.encoder(x)
+        x = self.encoder(x)
+        return x
 
     @staticmethod
     def compute_prototypes(support_feature: torch.Tensor, support_labels: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:

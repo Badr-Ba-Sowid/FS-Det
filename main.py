@@ -4,9 +4,9 @@ import sys
 
 from click import prompt
 
-from train.train_pointnet import train as pointtnet_train
+from train.train_pointnet import point_net_train as point_net_train
 from test.test_protonet import prepare_dataset as protonet_test
-from test.test_pointnet import test as pointnet_test
+from test.test_pointnet import test_ckpt as pointnet_test
 from train.train_protonet import train as protonet_train
 from config import Config
 
@@ -22,6 +22,8 @@ logger.addHandler(ch)
 def run_test(config: Config):
     logger.info(msg='=================Testing begins====================')
     pass
+
+
 
 
 if __name__ == "__main__":
@@ -41,7 +43,7 @@ if __name__ == "__main__":
 
     if option == 1:
         logger.info(msg='=================Supervised Training begins====================')
-        pointtnet_train(config)
+        point_net_train(config)
     elif option == 2:
         logger.info(msg='=================FewShot Training begins====================')
         protonet_train(config)
@@ -50,7 +52,7 @@ if __name__ == "__main__":
         if choosen_model == 1:
             protonet_test(config)
         elif choosen_model == 2:
-            run_test(config)
+            pointnet_test(config)
         else:
             raise ValueError('Provided wrong input')
     else:

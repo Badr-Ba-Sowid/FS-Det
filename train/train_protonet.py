@@ -47,14 +47,13 @@ def train(config: Config):
 
     torch.manual_seed(training_params.seed)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
     print(f'====================Using {device} to train {dataset_params.name} Dataset======================')
 
     dataset_params.name = f'{dataset_params.name}_{few_shot_params.n_ways}_{few_shot_params.k_shots}'
     dataset_params.batch_size = few_shot_params.n_ways*few_shot_params.k_shots
 
-    model = ProtoNet(num_classes=dataset_params.num_classes, device=device, pretrained_ckpts=training_params.pretrained_uri)
 
+    model = ProtoNet(num_classes=dataset_params.num_classes, device=device, pretrained_ckpts=None, use_attention=training_params.attention)
     dataset = NPYDataset(dataset_params.dataset, dataset_params.label)
 
     optimizer = optim.AdamW(model.parameters(), lr=training_params.learning_rate)
