@@ -4,3 +4,5 @@ data/
 ckpts/
 
 .vscode/
+
+experiment_results/
