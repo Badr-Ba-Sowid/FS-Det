@@ -5,17 +5,19 @@ from typing import Tuple
 import matplotlib.pyplot as plt
 
 import torch
+
 import torch.utils.data
 from torch import  optim
 from torch.utils.data import DataLoader
 
-from models import ProtoNet
+from models import ProtoNet, ProtoNetParallerWrapper
 from data_loader import FewShotBatchSampler, PointCloudDataset, NPYDataset
 from config import Config
 from test.test_protonet import test_proto
 from .utils import plot_training_val_fewshot
 
 def evaluate(model: ProtoNet, val_loader: DataLoader) -> Tuple[float, ...]:
+    
     with torch.no_grad():
         model.eval()
 
@@ -25,11 +27,12 @@ def evaluate(model: ProtoNet, val_loader: DataLoader) -> Tuple[float, ...]:
 
         for batch in tqdm(val_loader, desc='Evaluating batch'):
             point_clouds, labels = batch
-
+            
             point_clouds, labels = point_clouds.to(model.device), labels.to(model.device)
             pcd_embeddings = model(point_clouds)
-            
+
             support_features, query_features, support_labels, query_labels = split_batch(pcd_embeddings, labels) 
+
             prototypes, prototype_labels = model.compute_prototypes(support_features, support_labels)
 
             _, loss, acc = model.classify_features(prototypes, prototype_labels, query_features, query_labels)
@@ -46,14 +49,21 @@ def train(config: Config):
     testing_params = config.testing_params
 
     torch.manual_seed(training_params.seed)
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    print(f'====================Using {device} to train {dataset_params.name} Dataset======================')
+
 
     dataset_params.name = f'{dataset_params.name}_{few_shot_params.n_ways}_{few_shot_params.k_shots}'
     dataset_params.batch_size = few_shot_params.n_ways*few_shot_params.k_shots
 
-
+    device_ids = training_params.device_ids
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model = ProtoNet(num_classes=dataset_params.num_classes, device=device, pretrained_ckpts=None, use_attention=training_params.attention)
+
+    if device_ids is not None:
+        model = ProtoNetParallerWrapper(model, device_ids)
+    model.to(device)
+
+    print(f'====================Using {device} to train {dataset_params.name} Dataset======================')
+
     dataset = NPYDataset(dataset_params.dataset, dataset_params.label)
 
     optimizer = optim.AdamW(model.parameters(), lr=training_params.learning_rate)
@@ -65,7 +75,7 @@ def train(config: Config):
     validation_set = PointCloudDataset.from_dataset(dataset.pcds_to_tensor(), dataset.labels_to_tensor(), validation_cls_idx)
     test_set = PointCloudDataset.from_dataset(dataset.pcds_to_tensor(), dataset.labels_to_tensor(), test_cls_idx)
 
-    # test_set.save_dataset(f'data/model_net_40c/{dataset_params.name}')
+    test_set.save_dataset(f'data/model_net_40c/{dataset_params.name}')
 
     train_batch_sampler = FewShotBatchSampler(train_set.labels, n_ways=few_shot_params.n_ways, k_shots=few_shot_params.k_shots, include_query=True)
     val_batch_sampler = FewShotBatchSampler(validation_set.labels, n_ways=few_shot_params.n_ways, k_shots=few_shot_params.k_shots, include_query=True)
