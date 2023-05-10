@@ -2,15 +2,15 @@ import numpy as np
 from pathlib import Path
 import json
 
-shapenet_path = 'path to unziped shapenet model'
-shapenet_labels_path = 'path to labels json file'
+shapenet_path = './data/shape_net_55/shapenet_pc/'
+shapenet_labels_path = './data/shape_net_55/shapenet55_labels.json'
 
 def preprocess_shapenet_labels():
     directory = Path(shapenet_path)
     labels = None
     shape_net_55_labels = []
     
-    with open(shapenet_path) as f:
+    with open(shapenet_labels_path) as f:
         labels = json.load(f)
 
     labels_keys: list[str] = list(labels.keys())
@@ -34,10 +34,12 @@ def preprocess_shapenet_labels():
     print('stack pcd')
     print(stack_data.shape)
 
-    np.save('./preprocessed_shapenet/shape_net_labels.npy', stack_labels)
-    print('saved labels')
-    np.save('./preprocessed_shapenet/shape_net_pcd.npy', stack_data)
-    print('saved point cloud samples')
+    with open('./data/preprocessed_shapenet/shape_net_labels.npy', "wb") as f_labels:
+        np.save(f_labels, stack_labels)
+        print('saved labels')
+    with open('./data/preprocessed_shapenet/shape_net_pcd.npy', "wb") as f_pcd:
+        np.save(f_pcd, stack_data)
+        print('saved point cloud samples')
 
 
 preprocess_shapenet_labels()
