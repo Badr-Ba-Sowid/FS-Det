@@ -7,6 +7,7 @@ from click import prompt
 from train.train_pointnet import point_net_train as point_net_train
 from test.test_protonet import prepare_dataset as protonet_test
 from test.test_pointnet import test_ckpt as pointnet_test
+from test.test_dgcnn import test_ckpt as dgcnn_test
 from train.train_protonet import train as protonet_train
 from train.train_dgcnn import dgcnn_train as dgcnn_train
 from config import Config
@@ -52,11 +53,13 @@ if __name__ == "__main__":
         logger.info(msg='=================DGCNN Training begins====================')
         dgcnn_train(config)
     elif option == 4:
-        choosen_model: int = prompt('1. ProtoNet \n2. PointNet', value_proc=int)
+        choosen_model: int = prompt('1. ProtoNet \n2. PointNet\n3. DGCNN', value_proc=int)
         if choosen_model == 1:
             protonet_test(config)
         elif choosen_model == 2:
             pointnet_test(config)
+        elif choosen_model == 3:
+            dgcnn_test(config)
         else:
             raise ValueError('Provided wrong input')
     else:

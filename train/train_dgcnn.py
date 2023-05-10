@@ -14,14 +14,13 @@ import torch.optim as optim
 from models import DGCNN
 from data_loader import NPYDataset
 
-import numpy as np
-
 from utils.plot import plot_train_test_data
 import sklearn.metrics as metrics
 
 from config import Config
 from test.test_dgcnn import test
 from train.utils import cal_loss
+import pickle
 
 
 
@@ -29,6 +28,7 @@ def dgcnn_train(config: Config):
 
     training_params = config.trainig_params
     dataset_params = config.dataset_params
+    testing_params = config.testing_params
 
     torch.manual_seed(training_params.seed)
 
@@ -60,11 +60,15 @@ def dgcnn_train(config: Config):
         shuffle=True,
         num_workers=int(dataset_params.data_loader_num_workers))
 
-    test_data_loader = torch.utils.data.DataLoader(
-        test_set,
-        batch_size=dataset_params.batch_size,
-        shuffle=True,
-        num_workers=int(dataset_params.data_loader_num_workers))
+    # test_data_loader = torch.utils.data.DataLoader(
+    #     test_set,
+    #     batch_size=dataset_params.batch_size,
+    #     shuffle=True,
+    #     num_workers=int(dataset_params.data_loader_num_workers))
+    
+    # store the test dataset
+    with open(testing_params.dataset_path, "wb") as f:
+        pickle.dump(test_set, f)
 
     t_a, t_l, v_a, v_l = train(classifier, train_data_loader, val_data_loader,
                                     optimizer, scheduler, loss_fn,

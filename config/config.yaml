@@ -5,7 +5,7 @@ TRAINING:
   learning_rate: 0.0005
   scheduler_step: 10
   scheduler_gamma: 0.1
-  check_point_uri: 'ckpts/protonet/'
+  check_point_uri: 'ckpts/mode_net_40/dgcnn'
   attention: False
   device_ids: [0,1,2,3]
 
@@ -16,16 +16,17 @@ FEWSHOT:
   test_k_shots: [5, 10, 15, 20]
 
 DATASET:
-  name: 'ShapeNet55'
-  dataset_source : 'data/shapenet/preprocessed_shapenet/shape_net_pcd.npy'
-  label_source: 'data/shapenet/preprocessed_shapenet/shape_net_labels.npy'
-  # dataset_source : 'data/model_net_40c/data_original.npy'
-  # label_source: 'data/model_net_40c/model_net_labels.npy'
+  # name: 'ShapeNet55'
+  # dataset_source : 'data/shapenet/preprocessed_shapenet/shape_net_pcd.npy'
+  # label_source: 'data/shapenet/preprocessed_shapenet/shape_net_labels.npy'
+  name: 'ModelNet40'
+  dataset_source : 'data/model_net_40c/data_original.npy'
+  label_source: 'data/model_net_40c/model_net_labels.npy'
   num_classes: 40
   data_loader_num_workers: 1
-  batch_size: 16
+  batch_size: 8
   experiment_result_uri: 'experiment_results'
 
 TESTING:
-  model_state: 'ckpts/protonet/ModelNet55_5_5'
-  dataset_path: 'data/test_set/model_net_few_shot.pkl'
+  model_state: 'ckpts/mode_net_40/dgcnn' #'ckpts/protonet/ModelNet55_5_5'
+  dataset_path: 'data/test_set/model_net_dgcnn.pkl'
