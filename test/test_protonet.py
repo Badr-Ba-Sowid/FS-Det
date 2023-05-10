@@ -4,7 +4,7 @@ from statistics import mean, stdev
 import numpy as np
 
 from numpy.typing import NDArray
-from typing import List, Dict
+from typing import List, Dict, Union
 
 from tqdm import tqdm
 from collections import defaultdict
@@ -13,24 +13,24 @@ import torch
 import torch.utils.data
 from torch.utils.data import DataLoader
 
-from models import ProtoNet
+from models import ProtoNet, ProtoNetParallerWrapper
 from data_loader import PointCloudDataset, NPYDataset
 from config import Config, DatasetParams
 from utils.plot import plot_support, plot_query, plot_few_shot_test_acc_trend
 
-def test(model: ProtoNet, dataset: PointCloudDataset, k_shot: int, batch_size: int, num_worker: int):
+def test(model: Union[ProtoNet, ProtoNetParallerWrapper], dataset: PointCloudDataset, k_shot: int, batch_size: int, num_worker: int):
     # print(dataset.labels.shape)
     # print(dataset.labels.unique().shape[0])
-    # dataset.balance()
 
     num_classes = (dataset.labels.unique().shape[0])
 
     if dataset.labels.shape[0]%num_classes != 0:
-        if dataset.labels.shape[0]%num_classes > 2:
-            num_classes = num_classes - 2
-        elif dataset.labels.shape[0]%num_classes <= 2:
-            num_classes = num_classes - 1
-
+        dataset.balance()
+        # if dataset.labels.shape[0]%num_classes > 2:
+        #     num_classes = num_classes - 2
+        # elif dataset.labels.shape[0]%num_classes <= 2:
+        #     num_classes = num_classes - 1
+    num_classes = (dataset.labels.unique().shape[0])
     exmps_per_class = dataset.labels.shape[0]//num_classes
 
     with torch.no_grad():
@@ -118,8 +118,10 @@ def test(model: ProtoNet, dataset: PointCloudDataset, k_shot: int, batch_size: i
 def prepare_dataset(config: Config):
     dataset_params = config.dataset_params
     test_params = config.testing_params
+    training_params = config.trainig_params
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    device_ids = training_params.device_ids
     dataset = NPYDataset(dataset_params.dataset, dataset_params.label)
 
     if test_params.dataset_path is None:
@@ -127,7 +129,12 @@ def prepare_dataset(config: Config):
     else:
         test_set = PointCloudDataset.from_pickle(test_params.dataset_path)
 
+
     model = ProtoNet(dataset_params.num_classes, device=device)
+
+    if device_ids is not None:
+        model = ProtoNetParallerWrapper(model, device_ids)
+
     model.load_state_dict(torch.load(test_params.model_state))
 
     test_proto(model, test_set, test_params.k_shots, dataset_params, dataset.unique_classes_map)
@@ -138,7 +145,7 @@ def plot_support_and_query_results(support_sammples:List[Dict[str, NDArray]], qu
     plot_support(support_sammples, dataset_uniq_label_map, root_directory, ds_name, k_shot, 'test')
     plot_query(query_samples, predicted_targets, dataset_uniq_label_map, root_directory, ds_name, k_shot, 'test')
 
-def test_proto(model: ProtoNet, test_set: PointCloudDataset, k_shots: List[int], dataset_params: DatasetParams, dataset_uniq_label_map: Dict[int, str]):
+def test_proto(model: Union[ProtoNet, ProtoNetParallerWrapper], test_set: PointCloudDataset, k_shots: List[int], dataset_params: DatasetParams, dataset_uniq_label_map: Dict[int, str]):
     print(f'===========Begin testing on {dataset_params.name}=============')
     protonet_accuracies = dict()
 
@@ -153,5 +160,3 @@ def test_proto(model: ProtoNet, test_set: PointCloudDataset, k_shots: List[int],
 
 
     plot_few_shot_test_acc_trend(protonet_accuracies, 'ProtoNet', root_director=dataset_params.experiment_result_uri, ds_name=dataset_params.name)
-
-

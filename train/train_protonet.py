@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from tqdm import tqdm
-from typing import Tuple, List, Dict
+from typing import Tuple, List, Dict, Union
 from numpy.typing import NDArray
 import numpy as np
 
@@ -18,7 +18,7 @@ from test.test_protonet import test_proto
 from utils.plot import plot_training_val_fewshot, plot_query, plot_support
 from .utils import save_support_query_samples
 
-def evaluate(model: ProtoNet, val_loader: DataLoader) -> Tuple[float, ...]:
+def evaluate(model: Union[ProtoNet, ProtoNetParallerWrapper], val_loader: DataLoader) -> Tuple[float, ...]:
     
     with torch.no_grad():
         model.eval()
@@ -144,7 +144,7 @@ def train(config: Config):
         print(f"Epoch {epoch+1}/{training_params.epochs}, Training_loss: {total_loss/(len(train_loader))}, Training_acc:{total_acc/len(train_loader)}, Val_loss: {val_loss}, Val_acc: {val_acc}") # type: ignore
 
         if val_acc > best_val_acc:
-            if epoch > 5:
+            if epoch > 4:
                 best_val_acc = val_acc
                 print('best accuracy')
                 print(best_val_acc)
@@ -162,8 +162,8 @@ def train(config: Config):
     plot_support(support_samples, dataset.unique_classes_map, dataset_params.experiment_result_uri, dataset_params.name, few_shot_params.k_shots, 'train', few_shot_params.n_ways)
     plot_query(query_samples, predicted_logits, dataset.unique_classes_map, dataset_params.experiment_result_uri, dataset_params.name, few_shot_params.k_shots, 'train', few_shot_params.n_ways)
 
-    save_support_query_samples(support_samples, f'data/model_net_40c/support_{dataset_params.name}_{few_shot_params.n_ways}_{few_shot_params.k_shots}')
-    save_support_query_samples(query_samples, f'data/model_net_40c/query_{dataset_params.name}_{few_shot_params.n_ways}_{few_shot_params.k_shots}')
+    save_support_query_samples(support_samples, f'data/test_set/support_{dataset_params.name}_{few_shot_params.n_ways}_{few_shot_params.k_shots}.npy')
+    save_support_query_samples(query_samples, f'data/test_set/query_{dataset_params.name}_{few_shot_params.n_ways}_{few_shot_params.k_shots}.npy')
 
     # model.load_state_dict(torch.load(f'{training_params.ckpts}/{dataset_params.name}'))
     test_proto(model, test_set, testing_params.k_shots, dataset_params, dataset.unique_classes_map)

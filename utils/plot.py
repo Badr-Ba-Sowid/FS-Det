@@ -101,7 +101,7 @@ def plot_support(support_sammples:List[Dict[str, NDArray]], dataset_uniq_label_m
         new_dict['label'][i] = batch_sample_dict['label'][index]
         new_dict['pcd'][i] = batch_sample_dict['pcd'][index]
 
-    fig = plt.figure(figsize=(len(new_dict['label']), 10*num_samples))
+    fig = plt.figure(figsize=(len(new_dict['label'])+1, 10*num_samples))
     for i in range(len(new_dict['label'])):
         label = new_dict['label'][i]
         pcd = new_dict['pcd'][i]
