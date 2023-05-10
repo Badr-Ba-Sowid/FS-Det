@@ -17,7 +17,7 @@ class ProtoNet(nn.Module):
         self.encoder = PointNetEncoder(device, num_classes, use_attention)
         self.encoder.to(device)
         self.device = device
-        
+
         if pretrained_ckpts is not None:
             pretrained_dict = torch.load(pretrained_ckpts)
             self.encoder.load_state_dict(pretrained_dict)
