@@ -1,31 +1,31 @@
 TRAINING:
-  seed: 42
+  seed: 10
   train_ratio: 0.7
-  epochs: 20
+  epochs: 80
   learning_rate: 0.0005
   scheduler_step: 10
   scheduler_gamma: 0.1
-  check_point_uri: 'ckpts/protonet/'
+  check_point_uri: 'ckpts/mode_net_40/proto_net'
   attention: False
-  device_ids: [0,1,2,3]
+  # device_ids: [0,1,2,3]
 
 FEWSHOT:
-  n_ways: 5
+  n_ways: 10
   k_shots: 5
   n_tasks: 10
   test_k_shots: [5, 10, 15, 20]
 
 DATASET:
-  name: 'ShapeNet55'
-  dataset_source : 'data/shapenet/preprocessed_shapenet/shape_net_pcd.npy'
-  label_source: 'data/shapenet/preprocessed_shapenet/shape_net_labels.npy'
-  # dataset_source : 'data/model_net_40c/data_original.npy'
-  # label_source: 'data/model_net_40c/model_net_labels.npy'
+  # name: 'ShapeNet55'
+  # dataset_source : 'data/shapenet/preprocessed_shapenet/shape_net_pcd.npy'
+  # label_source: 'data/shapenet/preprocessed_shapenet/shape_net_labels.npy'
+  dataset_source : 'data/model_net_40c/data_original.npy'
+  label_source: 'data/model_net_40c/model_net_labels.npy'
   num_classes: 40
-  data_loader_num_workers: 1
+  data_loader_num_workers: 5
   batch_size: 16
   experiment_result_uri: 'experiment_results'
 
 TESTING:
-  model_state: 'ckpts/protonet/ModelNet55_5_5'
-  dataset_path: 'data/test_set/model_net_few_shot.pkl'
+  model_state: 'ckpts/mode_net_40/proto_net/ModelNet40_10_5'
+  dataset_path: 'data/model_net_40c/ModelNet40_10_5.pkl'
