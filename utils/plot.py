@@ -32,6 +32,7 @@ def plot_training_val_fewshot(training_arr: List[float], val_arr: List[float], r
     plt.savefig(f'{root_directory}/training_{mode}_plot_{ds_name}')
 
 def plot_few_shot_test_acc_trend(acc_dict:Dict, name: str, color=None, ax=None, root_director: str='', ds_name: str='unknown_ds'):
+    plt.clf()
     sns.set()
     if ax is None:
         fig, ax = plt.subplots(1, 1, figsize=(15, 10))
@@ -58,12 +59,11 @@ def plot_few_shot_test_acc_trend(acc_dict:Dict, name: str, color=None, ax=None, 
 
     plt.savefig(f'{root_director}/fewshot_performance_{ds_name}')
 
-def plot_support(support_sammples:List[Dict[str, NDArray]], dataset_uniq_label_map: Dict[int, str], root_directory: str, ds_name:str, k_shot: int):
+def plot_support(support_sammples:List[Dict[str, NDArray]], dataset_uniq_label_map: Dict[int, str], root_directory: str, ds_name:str, k_shot: int, mode: str, n_way: int=0):
+
     plt.clf()
 
     num_samples = len(np.unique(support_sammples[0]['label']))
-    fig = plt.figure(figsize=(15, 10*num_samples))
-
     random_index = np.random.randint(len(support_sammples))
     batch_sample_dict = support_sammples[random_index]
 
@@ -81,6 +81,7 @@ def plot_support(support_sammples:List[Dict[str, NDArray]], dataset_uniq_label_m
         new_dict['label'][i] = batch_sample_dict['label'][index]
         new_dict['pcd'][i] = batch_sample_dict['pcd'][index]
 
+    fig = plt.figure(figsize=(len(new_dict['label']), 10*num_samples))
     for i in range(len(new_dict['label'])):
         label = new_dict['label'][i]
         pcd = new_dict['pcd'][i]
@@ -95,9 +96,9 @@ def plot_support(support_sammples:List[Dict[str, NDArray]], dataset_uniq_label_m
 
         fig.colorbar(img, ax=ax)
 
-    plt.savefig(f'{root_directory}/support_samples_{ds_name}_{k_shot}_test')
+    plt.savefig(f'{root_directory}/support_samples_{ds_name}_{n_way}_{k_shot}_{mode}')
 
-def plot_query(query_samples: List[Dict[str, NDArray]], predicted_targets: List[NDArray], dataset_uniq_label_map: Dict[int, str], root_directory: str, ds_name:str, k_shot: int):
+def plot_query(query_samples: List[Dict[str, NDArray]], predicted_targets: List[NDArray], dataset_uniq_label_map: Dict[int, str], root_directory: str, ds_name:str, k_shot: int, mode: str, n_way:int=0):
     plt.clf()
     num_samples = 5
     fig = plt.figure(figsize=(15, 10*num_samples))
@@ -122,4 +123,6 @@ def plot_query(query_samples: List[Dict[str, NDArray]], predicted_targets: List[
 
         fig.colorbar(img, ax=ax)
 
-    plt.savefig(f'{root_directory}/query_samples_{ds_name}_{k_shot}_test')
+    plt.savefig(f'{root_directory}/query_samples_{ds_name}_{n_way}_{k_shot}_{mode}')
+
+
