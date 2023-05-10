@@ -21,7 +21,7 @@ def point_net_train(config: Config):
 
     dataset = NPYDataset(dataset_params.dataset, dataset_params.label)
 
-    classifier = PointNetCls(k = dataset_params.num_classes)
+    classifier = PointNetCls(k = dataset_params.num_classes, device ='cuda')
     classifier.cuda()
     classifier.train()
 

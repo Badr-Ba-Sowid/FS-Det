@@ -48,18 +48,17 @@ class ProtoNet(nn.Module):
     def predict(self, prototypes: torch.Tensor, query_features: torch.Tensor) -> torch.Tensor:
         distances =  self.euclidean_distance(prototypes, query_features)
 
-        return F.log_softmax(-distances, dim=-1).to(self.device)
+        return F.log_softmax(-distances, dim=1).to(self.device)
 
     def classify_features(self, prototypes: torch.Tensor, prototype_cls: torch.Tensor, query_features: torch.Tensor, query_cls: torch.Tensor) -> Tuple[torch.Tensor,...]:
         logits = self.predict(prototypes, query_features)
 
         loss = self.compute_loss(prototypes, prototype_cls, query_features, query_cls)
-
         actual_labels = ((prototype_cls[None:] == query_cls[:, None]).long().argmax(dim=-1)).to(self.device)
 
         acc =((logits.argmax(dim=1) == actual_labels).float().mean())
-
         return logits, loss, acc
+
 
     def compute_loss(self, prototypes: torch.Tensor, prototype_labels: torch.Tensor, query_features: torch.Tensor, query_labels: torch.Tensor) -> torch.Tensor:
         logits = self.predict(prototypes, query_features)
@@ -78,7 +77,7 @@ class ProtoNetParallerWrapper(nn.DataParallel):
 
     def euclidean_distance(self, prototypes: torch.Tensor, query_features: torch.Tensor) -> torch.Tensor:
         return self.module.euclidean_distance(prototypes, query_features)
-    
+
     def predict(self, prototypes: torch.Tensor, query_features: torch.Tensor) -> torch.Tensor:
         return self.module.predict(prototypes, query_features )
 

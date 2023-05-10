@@ -8,6 +8,7 @@ import numpy as np
 from collections import defaultdict
 from typing import List, Tuple
 from numpy.typing import NDArray
+from typing import Dict
 from typing_extensions import  Self
 
 import torch
@@ -34,6 +35,8 @@ class NPYDataset(Dataset):
         self.labels_ids: NDArray = np.array(labels_ids).reshape(len(labels_ids), 1)
         self.labels_txt: NDArray = np.array(labels_txt).reshape(len(labels_txt), 1)
 
+        self.unique_classes_map: Dict[int, str] = {d['class_id']: d['class_name'] for d in self.labels_dict}
+
     def __getitem__(self, point_cloud_idx:int):
         sample =  self.point_clouds[point_cloud_idx]
         label = self.labels_ids[point_cloud_idx]
@@ -42,6 +45,9 @@ class NPYDataset(Dataset):
         
     def __len__(self) -> int:
         return len(self.point_clouds)
+    
+    def get_label_txt_from_id(self, id: int) -> str:
+        return self.unique_classes_map.get(id, '')
 
     def plot(self, point_cloud_idx:int):
         point_cloud = self.point_clouds[point_cloud_idx]

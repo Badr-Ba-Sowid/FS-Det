@@ -14,7 +14,7 @@ from models import ProtoNet, ProtoNetParallerWrapper
 from data_loader import FewShotBatchSampler, PointCloudDataset, NPYDataset
 from config import Config
 from test.test_protonet import test_proto
-from .utils import plot_training_val_fewshot
+from utils.plot import plot_training_val_fewshot
 
 def evaluate(model: ProtoNet, val_loader: DataLoader) -> Tuple[float, ...]:
     
@@ -75,7 +75,8 @@ def train(config: Config):
     validation_set = PointCloudDataset.from_dataset(dataset.pcds_to_tensor(), dataset.labels_to_tensor(), validation_cls_idx)
     test_set = PointCloudDataset.from_dataset(dataset.pcds_to_tensor(), dataset.labels_to_tensor(), test_cls_idx)
 
-    test_set.save_dataset(f'data/model_net_40c/{dataset_params.name}')
+    if testing_params.dataset_path is not None:
+        test_set.save_dataset(testing_params.dataset_path)
 
     train_batch_sampler = FewShotBatchSampler(train_set.labels, n_ways=few_shot_params.n_ways, k_shots=few_shot_params.k_shots, include_query=True)
     val_batch_sampler = FewShotBatchSampler(validation_set.labels, n_ways=few_shot_params.n_ways, k_shots=few_shot_params.k_shots, include_query=True)
@@ -142,7 +143,7 @@ def train(config: Config):
 
     plot_training_val_fewshot(training_loss_per_epoch, val_loss_per_epoch, dataset_params.experiment_result_uri, dataset_params.name, 'Loss')
     plot_training_val_fewshot(training_acc_per_epoch, val_acc_per_epoch, dataset_params.experiment_result_uri,dataset_params.name, 'Accuracy')
-    test_proto(model, test_set, testing_params.k_shots, dataset_params=dataset_params)
+    test_proto(model, test_set, testing_params.k_shots, dataset_params, dataset.unique_classes_map)
 
 
 def split_batch(pcd_features: torch.Tensor, labels: torch.Tensor):
