@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 from tqdm import tqdm
-from typing import Tuple
-import matplotlib.pyplot as plt
+from typing import Tuple, List, Dict
+from numpy.typing import NDArray
+import numpy as np
 
 import torch
 
@@ -14,7 +15,8 @@ from models import ProtoNet, ProtoNetParallerWrapper
 from data_loader import FewShotBatchSampler, PointCloudDataset, NPYDataset
 from config import Config
 from test.test_protonet import test_proto
-from utils.plot import plot_training_val_fewshot
+from utils.plot import plot_training_val_fewshot, plot_query, plot_support
+from .utils import save_support_query_samples
 
 def evaluate(model: ProtoNet, val_loader: DataLoader) -> Tuple[float, ...]:
     
@@ -98,6 +100,10 @@ def train(config: Config):
     val_acc_per_epoch = []
     best_val_acc = 0
 
+    support_samples: List[Dict[str, NDArray]] = []
+    query_samples: List[Dict[str, NDArray]] = []
+    predicted_logits: List[NDArray] = []
+
     for epoch in range(training_params.epochs):
         model.train()
         total_loss = 0
@@ -105,15 +111,23 @@ def train(config: Config):
 
         for batch in tqdm(train_loader, desc=f'Training batch'):
             point_clouds, labels = batch
+
+            pcd_support , pcd_query = np.split(point_clouds, 2, axis=0)
+
             point_clouds, labels = point_clouds.to(device), labels.to(device)
 
             pcd_embeddings = model(point_clouds)
 
             support_features, query_features, support_labels, query_labels = split_batch(pcd_embeddings, labels)
 
+            support_samples.append({'pcd': pcd_support, 'label': support_labels.cpu().numpy()})
+            query_samples.append({'pcd': pcd_query, 'label': query_labels.cpu().numpy()})
+
             prototypes, classes = model.compute_prototypes(support_features, support_labels)
 
-            _, loss, acc = model.classify_features(prototypes, classes, query_features, query_labels)
+            logits, loss, acc = model.classify_features(prototypes, classes, query_features, query_labels)
+
+            predicted_logits.append(logits.cpu().detach().numpy())
 
             optimizer.zero_grad()
             loss.backward()
@@ -121,6 +135,7 @@ def train(config: Config):
 
             total_loss += loss.item()
             total_acc +=acc.item()
+
 
         scheduler.step()
 
@@ -141,8 +156,16 @@ def train(config: Config):
         val_acc_per_epoch.append(val_acc)
         val_loss_per_epoch.append(val_loss)
 
+
     plot_training_val_fewshot(training_loss_per_epoch, val_loss_per_epoch, dataset_params.experiment_result_uri, dataset_params.name, 'Loss')
     plot_training_val_fewshot(training_acc_per_epoch, val_acc_per_epoch, dataset_params.experiment_result_uri,dataset_params.name, 'Accuracy')
+    plot_support(support_samples, dataset.unique_classes_map, dataset_params.experiment_result_uri, dataset_params.name, few_shot_params.k_shots, 'train', few_shot_params.n_ways)
+    plot_query(query_samples, predicted_logits, dataset.unique_classes_map, dataset_params.experiment_result_uri, dataset_params.name, few_shot_params.k_shots, 'train', few_shot_params.n_ways)
+
+    save_support_query_samples(support_samples, f'data/model_net_40c/support_{dataset_params.name}_{few_shot_params.n_ways}_{few_shot_params.k_shots}')
+    save_support_query_samples(query_samples, f'data/model_net_40c/query_{dataset_params.name}_{few_shot_params.n_ways}_{few_shot_params.k_shots}')
+
+    # model.load_state_dict(torch.load(f'{training_params.ckpts}/{dataset_params.name}'))
     test_proto(model, test_set, testing_params.k_shots, dataset_params, dataset.unique_classes_map)
 
 

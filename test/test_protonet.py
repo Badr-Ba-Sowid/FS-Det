@@ -7,6 +7,7 @@ from numpy.typing import NDArray
 from typing import List, Dict
 
 from tqdm import tqdm
+from collections import defaultdict
 
 import torch
 import torch.utils.data
@@ -18,8 +19,11 @@ from config import Config, DatasetParams
 from utils.plot import plot_support, plot_query, plot_few_shot_test_acc_trend
 
 def test(model: ProtoNet, dataset: PointCloudDataset, k_shot: int, batch_size: int, num_worker: int):
+    # print(dataset.labels.shape)
+    # print(dataset.labels.unique().shape[0])
+    # dataset.balance()
+
     num_classes = (dataset.labels.unique().shape[0])
-    
 
     if dataset.labels.shape[0]%num_classes != 0:
         if dataset.labels.shape[0]%num_classes > 2:
@@ -27,7 +31,7 @@ def test(model: ProtoNet, dataset: PointCloudDataset, k_shot: int, batch_size: i
         elif dataset.labels.shape[0]%num_classes <= 2:
             num_classes = num_classes - 1
 
-    exmps_per_class = dataset.labels.shape[0] // num_classes
+    exmps_per_class = dataset.labels.shape[0]//num_classes
 
     with torch.no_grad():
         model.eval()
@@ -86,6 +90,7 @@ def test(model: ProtoNet, dataset: PointCloudDataset, k_shot: int, batch_size: i
         prototypes, proto_classes = model.compute_prototypes(k_pcd_feats, k_targets)
         # Evaluate accuracy on the rest of the dataset
         batch_acc = 0
+        query_size = 0
         for e_idx in range(0, pcd_features.shape[0], k_shot):
             if k_idx == e_idx:  # Do not evaluate on the support set examples
                 continue
@@ -93,6 +98,7 @@ def test(model: ProtoNet, dataset: PointCloudDataset, k_shot: int, batch_size: i
             e_targets = pcd_targets[e_idx : e_idx + k_shot].flatten(0, 1)
 
             query_sample = pcd_samples[e_idx : e_idx + k_shot]
+            query_size += query_sample.shape[0]
             query_sample = query_sample.reshape(query_sample.shape[0]*query_sample.shape[1], query_sample.shape[2], query_sample.shape[3])
             query_label = pcd_labels[e_idx : e_idx + k_shot].flatten()
             query_samples.append({'pcd': query_sample, 'label': query_label}) # type: ignore
@@ -102,7 +108,8 @@ def test(model: ProtoNet, dataset: PointCloudDataset, k_shot: int, batch_size: i
             batch_acc += acc.item()
 
             predicted_targets.append(logits.cpu().numpy())
-        batch_acc /= pcd_features.shape[0] // k_shot - 1
+
+        batch_acc /= pcd_features.shape[0] // k_shot -1
         accuracies.append(batch_acc)
 
     return (mean(accuracies), stdev(accuracies)), (support_samples, query_samples, predicted_targets)
@@ -128,8 +135,8 @@ def prepare_dataset(config: Config):
 
 def plot_support_and_query_results(support_sammples:List[Dict[str, NDArray]], query_samples: List[Dict[str, NDArray]], predicted_targets: List[NDArray], dataset_uniq_label_map: Dict[int, str], root_directory: str, ds_name:str, k_shot: int):
 
-    plot_support(support_sammples, dataset_uniq_label_map, root_directory, ds_name, k_shot)
-    plot_query(query_samples, predicted_targets, dataset_uniq_label_map, root_directory, ds_name, k_shot)
+    plot_support(support_sammples, dataset_uniq_label_map, root_directory, ds_name, k_shot, 'test')
+    plot_query(query_samples, predicted_targets, dataset_uniq_label_map, root_directory, ds_name, k_shot, 'test')
 
 def test_proto(model: ProtoNet, test_set: PointCloudDataset, k_shots: List[int], dataset_params: DatasetParams, dataset_uniq_label_map: Dict[int, str]):
     print(f'===========Begin testing on {dataset_params.name}=============')
@@ -142,7 +149,7 @@ def test_proto(model: ProtoNet, test_set: PointCloudDataset, k_shots: List[int],
             "Accuracy for k=%i: %4.2f%% (+-%4.2f%%)"
             % (k, 100.0 * protonet_accuracies[k][0], 100 * protonet_accuracies[k][1]))
 
-        plot_support_and_query_results(support_samples, query_samples, predicted_targets, dataset_uniq_label_map, dataset_params.experiment_result_uri, dataset_params.name, k)
+        # plot_support_and_query_results(support_samples, query_samples, predicted_targets, dataset_uniq_label_map, dataset_params.experiment_result_uri, dataset_params.name, k)
 
 
     plot_few_shot_test_acc_trend(protonet_accuracies, 'ProtoNet', root_director=dataset_params.experiment_result_uri, ds_name=dataset_params.name)

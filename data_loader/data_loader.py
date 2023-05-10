@@ -129,6 +129,38 @@ class PointCloudDataset(Dataset):
     def __len__(self) -> int:
         return self.pcds.shape[0]
 
+    def balance(self):
+        uniq_labels = self.labels.unique()
+        label_count = []
+
+        for label in uniq_labels:
+            count = torch.sum(self.labels.eq(label)).item()
+            label_count.append({'count': count, 'label': label.item()})
+
+        count_dict = {}
+        for d in label_count:
+            count = d['count']
+            if count not in count_dict:
+                count_dict[count] = 0
+            count_dict[count] += 1
+
+        # determine the count value that is being repeated the most
+        most_common_count = max(count_dict.keys())
+
+        self.remove_class([d['label'] for d in label_count if d['count'] != most_common_count])
+
+    def remove_class(self, label_values: List[float]):
+        labels = self.labels.numpy()
+        pcds = self.pcds.numpy()
+
+        for label in label_values:
+            indexes = np.where(labels == label)[0]
+
+            labels = np.delete(labels, indexes, axis=0)
+            pcds = np.delete(pcds, indexes, axis=0)
+
+        self.labels = torch.from_numpy(labels)
+        self.pcds = torch.from_numpy(pcds)
 class FewShotBatchSampler(Sampler):
     def __init__(self, dataset_labels: torch.Tensor, n_ways: int, k_shots: int, include_query: bool=False, shuffle: bool=True, shuffle_once: bool=True) -> None:
         """
