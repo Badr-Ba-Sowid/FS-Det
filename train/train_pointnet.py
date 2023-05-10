@@ -9,18 +9,19 @@ from data_loader import NPYDataset
 from models import PointNetCls
 from utils.plot import plot_train_test_data
 from test.test_pointnet import test
-
+import pickle
 
 def point_net_train(config: Config):
 
     training_params = config.trainig_params
     dataset_params = config.dataset_params
+    testing_params = config.testing_params
 
     torch.manual_seed(training_params.seed)
 
     dataset = NPYDataset(dataset_params.dataset, dataset_params.label)
 
-    classifier = PointNetCls(k = dataset_params.num_classes)
+    classifier = PointNetCls(k = dataset_params.num_classes, device ='cuda')
     classifier.cuda()
     classifier.train()
 
@@ -46,11 +47,9 @@ def point_net_train(config: Config):
         shuffle=True,
         num_workers=int(dataset_params.data_loader_num_workers))
 
-    test_data_loader = torch.utils.data.DataLoader(
-        test_set,
-        batch_size=dataset_params.batch_size,
-        shuffle=True,
-        num_workers=int(dataset_params.data_loader_num_workers))
+    # store the test dataset
+    with open(testing_params.dataset_path, "wb") as f:
+        pickle.dump(test_set, f)
 
     t_a, t_l, v_a, v_l = train(classifier, train_data_loader, val_data_loader,
                                     optimizer, scheduler, loss_fn,
@@ -59,9 +58,6 @@ def point_net_train(config: Config):
 
     plot_train_test_data(t_a, v_a, "Accuracy")
     plot_train_test_data(t_l, v_l, "Loss")
-    # accuracy = test(classifier, test_data_loader, loss_fn)
-    # print("Final accuracy ", accuracy)
-
 
 
 def train(model, train_data_loader, val_data_loader,

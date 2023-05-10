@@ -1,22 +1,17 @@
 
+import numpy as np
+from numpy.typing import NDArray
+from typing import List, Dict
 import matplotlib.pyplot as plt
 import numpy as np
 import torch
 import torch.nn.functional as F
 
-from typing import List
 
-def plot_training_val_fewshot(training_arr: List[float], val_arr: List[float], root_directory: str, ds_name:str, mode: str):
-    plt.clf()
-    print(f'Saving training/validation {mode} plot')
-    epochs = range(1, len(training_arr) + 1)
-    plt.plot(epochs, training_arr, 'b-', label='Training')
-    plt.plot(epochs, val_arr, 'r-', label='Validation')
-    plt.title(f'Training and validation {mode}')
-    plt.xlabel('Epochs')
-    plt.ylabel(mode)
-    plt.legend()
-    plt.savefig(f'{root_directory}/training_{mode}_plot_{ds_name}')
+def save_support_query_samples(data: List[Dict[str, NDArray]], filename: str):
+    output_array = np.stack(data, axis=0) # type: ignore
+
+    np.save(filename, output_array)
 
 def cal_loss(pred, gold, smoothing=True):
     ''' Calculate cross entropy loss, apply label smoothing if needed. '''

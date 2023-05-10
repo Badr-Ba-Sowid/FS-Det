@@ -5,7 +5,7 @@ import yaml
 
 from dataclasses import dataclass
 
-from typing import Any, Optional
+from typing import Any, Optional, List
 from typing_extensions import Self
 
 __all__ = ['Config', 'DatasetParams']
@@ -20,10 +20,12 @@ class TrainingParams:
     scheduler_gamma: float
     ckpts: str
     pretrained_uri: Optional[str]
+    attention: bool
+    device_ids: Optional[List[int]]
 
 @dataclass
 class TestingParams:
-    dataset_path:str
+    dataset_path: Optional[str]
     model_state: str
     k_shots: list[int]
 
@@ -71,6 +73,8 @@ class Config:
                             scheduler_gamma=float(config.get('scheduler_gamma', 0.1)),
                             ckpts=(config.get('check_point_uri', '')),
                             pretrained_uri=(config.get('pretrained_uri', None)),
+                            attention=(config.get('attention', False)),
+                            device_ids=(config.get('device_ids', None))
                 )
 
     def _parse_few_shot_params(self, config: dict[str, Any]) -> FewShotParams:
@@ -92,6 +96,6 @@ class Config:
                 )
 
     def _parse_testing_params(self, config: dict[str, Any]) -> TestingParams:
-        return TestingParams(dataset_path = str(config.get('dataset_path')),
-                                model_state=str(config.get('model_state', '')),
+        return TestingParams(dataset_path =(config.get('dataset_path', None)),
+                                model_state=(config.get('model_state', '')),
                                 k_shots=self.few_shot_params.test_k_shots)

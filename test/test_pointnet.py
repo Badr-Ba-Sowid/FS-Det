@@ -7,7 +7,7 @@ from config import Config
 from data_loader import NPYDataset
 from models import PointNetCls
 from tqdm import tqdm
-
+import pickle
 
 def test_ckpt(config: Config):
     dataset_params = config.dataset_params
@@ -15,13 +15,16 @@ def test_ckpt(config: Config):
     model = PointNetCls(dataset_params.num_classes)
     model = model.cuda()
     model.load_state_dict(torch.load(test_params.model_state))
-    data_loader = prepare_dataloader(dataset_params)
+    data_loader = prepare_dataloader(dataset_params, test_params)
     accuracy, total_loss = test(model, data_loader, loss_fn=F.nll_loss)
     print("=============Results 🙅‍♂️=============")
     print("Accuracy : ", accuracy)
 
-def prepare_dataloader(dataset_params):
-    dataset = NPYDataset(dataset_params.dataset, dataset_params.label)
+
+def prepare_dataloader(dataset_params, test_params):
+    with open(test_params.dataset_path, "rb") as f:
+        dataset = pickle.load(f)
+
     return torch.utils.data.DataLoader(
         dataset,
         batch_size=dataset_params.batch_size,
@@ -34,14 +37,22 @@ def test(model, data_loader, loss_fn):
     total_correct = 0
     total_loss = 0
 
+
     for _, data in tqdm(enumerate(data_loader, 0)):
         point_cloud, label = data
         point_cloud, label = point_cloud.cuda(), label.cuda()
 
         pred, _, _ = model(point_cloud)
-        total_loss += loss_fn(pred, torch.flatten(label)).item()
+        loss = loss_fn(pred, torch.flatten(label)).item()
+        total_loss += loss
+
         pred_choice = pred.data.max(1)[1]
         correct = pred_choice.eq(torch.flatten(label)).sum().item()
         total_correct += correct
+
+        # print("label ", label)
+        # print("prediction ", pred_choice)
+
     accuracy = total_correct / len(data_loader.dataset)
+
     return accuracy, total_loss / len(data_loader)
