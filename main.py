@@ -1,30 +1,66 @@
-import json
 import argparse
+import logging
+import sys
+
+from click import prompt
+
+from train.train_pointnet import point_net_train as point_net_train
+from test.test_protonet import prepare_dataset as protonet_test
+from test.test_pointnet import test_ckpt as pointnet_test
+from test.test_dgcnn import test_ckpt as dgcnn_test
+from train.train_protonet import train as protonet_train
+from train.train_dgcnn import dgcnn_train as dgcnn_train
+from config import Config
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
+
+ch = logging.StreamHandler(sys.stdout)
+ch.setLevel(logging.INFO)
+
+logger.addHandler(ch)
 
 
-
-
-def parse_config_file(config_file_path: str) -> json:
-    with open(config_file_path, 'r') as config_file:
-        config_data = json.load(config_file)
-        return config_data
-    
-def init_model(config_file : json):
+def run_test(config: Config):
+    logger.info(msg='=================Testing begins====================')
     pass
 
-def predict():
-    pass
 
 
-def main():
-    #Get arguments for config file parsing
-    parser = argparse.ArgumentParser()
-    parser.add_argument("-c", "--config", help = "model config file")
-    args = parser.parse_args()
-    if args.config:
-        config_file = parse_config_file(args.config)
-        print(config_file)
-    else:
-        print("No configuration file specified")
+
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser(
+        description= 'Training ModelNet40',
+        formatter_class=argparse.RawDescriptionHelpFormatter
+    )
+    parser.add_argument('-c', '--config', metavar='<config>', type=str, help = "Training and test config file")
+
+    args = parser.parse_args()
+    config_uri: str = args.config
+    config = Config.from_file(config_uri)
+
+    logger.info('Please choose the option that you wish to run:')
+
+    option: int = prompt('1. Train a dataset on PointNet\n2. Train ProtoNet for fewshot learning\n3. Train DGCNN\n4. Test your model\nOption', value_proc=int)
+
+    if option == 1:
+        logger.info(msg='=================Supervised Training begins====================')
+        point_net_train(config)
+    elif option == 2:
+        logger.info(msg='=================FewShot Training begins====================')
+        protonet_train(config)
+    elif option == 3:
+        logger.info(msg='=================DGCNN Training begins====================')
+        dgcnn_train(config)
+    elif option == 4:
+        choosen_model: int = prompt('1. ProtoNet \n2. PointNet\n3. DGCNN', value_proc=int)
+        if choosen_model == 1:
+            protonet_test(config)
+        elif choosen_model == 2:
+            pointnet_test(config)
+        elif choosen_model == 3:
+            dgcnn_test(config)
+        else:
+            raise ValueError('Provided wrong input')
+    else:
+        raise ValueError('Provided wrong input')

@@ -1,2 +1,7 @@
 numpy
 matplotlib
+tqdm
+click
+yaml
+seaborn
+scikit-learn

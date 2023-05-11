@@ -1,0 +1,8 @@
+__pycache__/
+
+data/
+ckpts/
+config/
+.vscode/
+
+experiment_results/

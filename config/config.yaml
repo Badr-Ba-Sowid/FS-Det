@@ -1,0 +1,32 @@
+TRAINING:
+  seed: 10
+  train_ratio: 0.7
+  epochs: 40
+  learning_rate: 0.005
+  scheduler_step: 10
+  scheduler_gamma: 0.1
+  check_point_uri: 'ckpts/mode_net_40/proto_net'
+  attention: False
+  # device_ids: [0,1,2,3]
+
+FEWSHOT:
+  n_ways: 10
+  k_shots: 10
+  n_tasks: 10
+  test_k_shots: [5, 10, 15, 20]
+
+DATASET:
+  # name: 'ShapeNet55'
+  # dataset_source : 'data/shapenet/preprocessed_shapenet/shape_net_pcd.npy'
+  # label_source: 'data/shapenet/preprocessed_shapenet/shape_net_labels.npy'
+  name: 'ModelNet40'
+  dataset_source : 'data/model_net_40c/data_original.npy'
+  label_source: 'data/model_net_40c/model_net_labels.npy'
+  num_classes: 40
+  data_loader_num_workers: 5
+  batch_size: 16
+  experiment_result_uri: 'experiment_results'
+
+TESTING:
+  model_state: 'ckpts/mode_net_40/proto_net/ModelNet40_20_5'
+  dataset_path: 'data/model_net_40c/ModelNet40_20_5.pkl'
