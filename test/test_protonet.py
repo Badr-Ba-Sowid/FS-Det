@@ -26,10 +26,6 @@ def test(model: Union[ProtoNet, ProtoNetParallerWrapper], dataset: PointCloudDat
 
     if dataset.labels.shape[0]%num_classes != 0:
         dataset.balance()
-        # if dataset.labels.shape[0]%num_classes > 2:
-        #     num_classes = num_classes - 2
-        # elif dataset.labels.shape[0]%num_classes <= 2:
-        #     num_classes = num_classes - 1
     num_classes = (dataset.labels.unique().shape[0])
     exmps_per_class = dataset.labels.shape[0]//num_classes
 
@@ -75,7 +71,6 @@ def test(model: Union[ProtoNet, ProtoNetParallerWrapper], dataset: PointCloudDat
     predicted_targets = []
     support_samples: List[Dict[str, NDArray]] = []
     query_samples: List[Dict[str, NDArray]] = []
-
     for k_idx in tqdm(range(0, pcd_features.shape[0], k_shot), "Evaluating prototype classification", leave=False):
         # Select support set and calculate prototypes
         support_sample = pcd_samples[k_idx: k_idx + k_shot]
@@ -91,6 +86,7 @@ def test(model: Union[ProtoNet, ProtoNetParallerWrapper], dataset: PointCloudDat
         # Evaluate accuracy on the rest of the dataset
         batch_acc = 0
         query_size = 0
+        batch_acc = []
         for e_idx in range(0, pcd_features.shape[0], k_shot):
             if k_idx == e_idx:  # Do not evaluate on the support set examples
                 continue
@@ -105,14 +101,11 @@ def test(model: Union[ProtoNet, ProtoNetParallerWrapper], dataset: PointCloudDat
 
             logits, _, acc = model.classify_features(prototypes, proto_classes, e_pcd_feats, e_targets)
 
-            batch_acc += acc.item()
+            batch_acc.append(acc.item())
 
             predicted_targets.append(logits.cpu().numpy())
 
-        batch_acc /= pcd_features.shape[0] // k_shot -1
-        accuracies.append(batch_acc)
-
-    return (mean(accuracies), stdev(accuracies)), (support_samples, query_samples, predicted_targets)
+    return (mean(batch_acc), stdev(batch_acc)), (support_samples, query_samples, predicted_targets)
 
 
 def prepare_dataset(config: Config):
@@ -135,6 +128,7 @@ def prepare_dataset(config: Config):
     if device_ids is not None:
         model = ProtoNetParallerWrapper(model, device_ids)
 
+    model.to(device)
     model.load_state_dict(torch.load(test_params.model_state))
 
     test_proto(model, test_set, test_params.k_shots, dataset_params, dataset.unique_classes_map)

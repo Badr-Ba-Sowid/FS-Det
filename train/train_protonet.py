@@ -16,7 +16,7 @@ from data_loader import FewShotBatchSampler, PointCloudDataset, NPYDataset
 from config import Config
 from test.test_protonet import test_proto
 from utils.plot import plot_training_val_fewshot, plot_query, plot_support
-from .utils import save_support_query_samples
+from .utils import save_support_query_prediction_samples
 
 def evaluate(model: Union[ProtoNet, ProtoNetParallerWrapper], val_loader: DataLoader) -> Tuple[float, ...]:
     
@@ -121,14 +121,14 @@ def train(config: Config):
 
             support_features, query_features, support_labels, query_labels = split_batch(pcd_embeddings, labels)
 
-            support_samples.append({'pcd': pcd_support, 'label': support_labels.cpu().numpy()})
-            query_samples.append({'pcd': pcd_query, 'label': query_labels.cpu().numpy()})
 
             prototypes, classes = model.compute_prototypes(support_features, support_labels)
-
             logits, loss, acc = model.classify_features(prototypes, classes, query_features, query_labels)
 
-            predicted_logits.append(logits.cpu().detach().numpy())
+            if(epoch == 0 or epoch==9):
+                support_samples.append({'pcd': pcd_support, 'label': support_labels.cpu().numpy()})
+                query_samples.append({'pcd': pcd_query, 'label': query_labels.cpu().numpy()})
+                predicted_logits.append(logits.cpu().detach().numpy())
 
             optimizer.zero_grad()
             loss.backward()
@@ -164,9 +164,7 @@ def train(config: Config):
     # plot_support(support_samples, dataset.unique_classes_map, dataset_params.experiment_result_uri, dataset_params.name, few_shot_params.k_shots, 'train', few_shot_params.n_ways)
     # plot_query(query_samples, predicted_logits, dataset.unique_classes_map, dataset_params.experiment_result_uri, dataset_params.name, few_shot_params.k_shots, 'train', few_shot_params.n_ways)
 
-    save_support_query_samples(support_samples, f'data/test_set/support_{dataset_params.name}_{few_shot_params.n_ways}_{few_shot_params.k_shots}.npy')
-    save_support_query_samples(query_samples, f'data/test_set/query_{dataset_params.name}_{few_shot_params.n_ways}_{few_shot_params.k_shots}.npy')
-
+    save_support_query_prediction_samples(support_samples, query_samples, predicted_logits, f'{dataset_params.name}_{few_shot_params.n_ways}_{few_shot_params.k_shots}')
     # model.load_state_dict(torch.load(f'{training_params.ckpts}/{dataset_params.name}'))
     # test_proto(model, test_set, testing_params.k_shots, dataset_params, dataset.unique_classes_map)
 
