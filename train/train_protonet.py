@@ -16,7 +16,7 @@ from data_loader import FewShotBatchSampler, PointCloudDataset, NPYDataset
 from config import Config
 from test.test_protonet import test_proto
 from utils.plot import plot_training_val_fewshot, plot_query, plot_support
-from .utils import save_support_query_samples
+from .utils import save_support_query_prediction_samples
 
 def evaluate(model: Union[ProtoNet, ProtoNetParallerWrapper], val_loader: DataLoader) -> Tuple[float, ...]:
     
@@ -69,7 +69,7 @@ def train(config: Config):
     dataset = NPYDataset(dataset_params.dataset, dataset_params.label)
 
     optimizer = optim.AdamW(model.parameters(), lr=training_params.learning_rate)
-    scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer=optimizer, T_max=training_params.epochs, eta_min=(training_params.learning_rate)*0.001, last_epoch=-1)
+    scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer=optimizer, T_max=training_params.epochs, eta_min=(training_params.learning_rate)*0.0001, last_epoch=-1)
 
     train_cls_idx, validation_cls_idx, test_cls_idx = dataset.train_test_val_class_indices_split(train_ratio=training_params.training_split, seed=training_params.seed)
 
@@ -99,10 +99,11 @@ def train(config: Config):
     val_loss_per_epoch = []
     val_acc_per_epoch = []
     best_val_acc = 0
+    best_loss_val = float('inf')
 
     support_samples: List[Dict[str, NDArray]] = []
     query_samples: List[Dict[str, NDArray]] = []
-    predicted_logits: List[NDArray] = []
+    predicted_logits: List[Dict[str, NDArray]] = []
 
     for epoch in range(training_params.epochs):
         model.train()
@@ -120,14 +121,14 @@ def train(config: Config):
 
             support_features, query_features, support_labels, query_labels = split_batch(pcd_embeddings, labels)
 
-            support_samples.append({'pcd': pcd_support, 'label': support_labels.cpu().numpy()})
-            query_samples.append({'pcd': pcd_query, 'label': query_labels.cpu().numpy()})
 
             prototypes, classes = model.compute_prototypes(support_features, support_labels)
-
             logits, loss, acc = model.classify_features(prototypes, classes, query_features, query_labels)
 
-            predicted_logits.append(logits.cpu().detach().numpy())
+            if(epoch == 0 or epoch==9):
+                support_samples.append({'pcd': pcd_support, 'label': support_labels.cpu().numpy()})
+                query_samples.append({'pcd': pcd_query, 'label': query_labels.cpu().numpy()})
+                predicted_logits.append({'logtis': logits.cpu().detach().numpy()}) 
 
             optimizer.zero_grad()
             loss.backward()
@@ -143,13 +144,14 @@ def train(config: Config):
 
         print(f"Epoch {epoch+1}/{training_params.epochs}, Training_loss: {total_loss/(len(train_loader))}, Training_acc:{total_acc/len(train_loader)}, Val_loss: {val_loss}, Val_acc: {val_acc}") # type: ignore
 
-        if val_acc > best_val_acc:
+        if val_acc > best_val_acc and val_loss < best_loss_val:
             if epoch > 4:
                 best_val_acc = val_acc
+                best_loss_val = val_loss
                 print('best accuracy')
                 print(best_val_acc)
                 print('Saving a checkpoint')
-                torch.save(model.state_dict(), f'{training_params.ckpts}/{dataset_params.name}')
+                torch.save(model.state_dict(), f'{training_params.ckpts}/{dataset_params.name}_2')
 
         training_loss_per_epoch.append(total_loss/(len(train_loader)))
         training_acc_per_epoch.append(total_acc/(len(train_loader)))
@@ -157,15 +159,12 @@ def train(config: Config):
         val_loss_per_epoch.append(val_loss)
 
 
-    plot_training_val_fewshot(training_loss_per_epoch, val_loss_per_epoch, dataset_params.experiment_result_uri, dataset_params.name, 'Loss')
-    plot_training_val_fewshot(training_acc_per_epoch, val_acc_per_epoch, dataset_params.experiment_result_uri,dataset_params.name, 'Accuracy')
-    plot_support(support_samples, dataset.unique_classes_map, dataset_params.experiment_result_uri, dataset_params.name, few_shot_params.k_shots, 'train', few_shot_params.n_ways)
-    plot_query(query_samples, predicted_logits, dataset.unique_classes_map, dataset_params.experiment_result_uri, dataset_params.name, few_shot_params.k_shots, 'train', few_shot_params.n_ways)
+    # plot_training_val_fewshot(training_loss_per_epoch, val_loss_per_epoch, dataset_params.experiment_result_uri, dataset_params.name, 'Loss')
+    # plot_training_val_fewshot(training_acc_per_epoch, val_acc_per_epoch, dataset_params.experiment_result_uri,dataset_params.name, 'Accuracy')
+    # plot_support(support_samples, dataset.unique_classes_map, dataset_params.experiment_result_uri, dataset_params.name, few_shot_params.k_shots, 'train', few_shot_params.n_ways)
+    # plot_query(query_samples, predicted_logits, dataset.unique_classes_map, dataset_params.experiment_result_uri, dataset_params.name, few_shot_params.k_shots, 'train', few_shot_params.n_ways)
 
-    save_support_query_samples(support_samples, f'data/test_set/support_{dataset_params.name}_{few_shot_params.n_ways}_{few_shot_params.k_shots}.npy')
-    save_support_query_samples(query_samples, f'data/test_set/query_{dataset_params.name}_{few_shot_params.n_ways}_{few_shot_params.k_shots}.npy')
-
-    # model.load_state_dict(torch.load(f'{training_params.ckpts}/{dataset_params.name}'))
+    # save_support_query_prediction_samples(support_samples, query_samples, predicted_logits, f'{dataset_params.name}_{few_shot_params.n_ways}_{few_shot_params.k_shots}')
     test_proto(model, test_set, testing_params.k_shots, dataset_params, dataset.unique_classes_map)
 
 

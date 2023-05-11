@@ -55,7 +55,7 @@ def plot_few_shot_test_acc_trend(acc_dict:Dict, name: str, color=None, ax=None, 
     plt.clf()
     sns.set()
     if ax is None:
-        fig, ax = plt.subplots(1, 1, figsize=(15, 10))
+        fig, ax = plt.subplots(1, 1, figsize=(8, 6))
     ks = sorted(list(acc_dict.keys()))
     mean_accs = [acc_dict[k][0] for k in ks]
     std_accs = [acc_dict[k][1] for k in ks]
@@ -101,7 +101,7 @@ def plot_support(support_sammples:List[Dict[str, NDArray]], dataset_uniq_label_m
         new_dict['label'][i] = batch_sample_dict['label'][index]
         new_dict['pcd'][i] = batch_sample_dict['pcd'][index]
 
-    fig = plt.figure(figsize=(len(new_dict['label'])+1, 10*num_samples))
+    fig = plt.figure(figsize=(num_samples, 10*num_samples))
     for i in range(len(new_dict['label'])):
         label = new_dict['label'][i]
         pcd = new_dict['pcd'][i]
