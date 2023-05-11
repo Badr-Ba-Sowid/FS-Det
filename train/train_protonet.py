@@ -159,14 +159,13 @@ def train(config: Config):
         val_loss_per_epoch.append(val_loss)
 
 
-    plot_training_val_fewshot(training_loss_per_epoch, val_loss_per_epoch, dataset_params.experiment_result_uri, dataset_params.name, 'Loss')
-    plot_training_val_fewshot(training_acc_per_epoch, val_acc_per_epoch, dataset_params.experiment_result_uri,dataset_params.name, 'Accuracy')
+    # plot_training_val_fewshot(training_loss_per_epoch, val_loss_per_epoch, dataset_params.experiment_result_uri, dataset_params.name, 'Loss')
+    # plot_training_val_fewshot(training_acc_per_epoch, val_acc_per_epoch, dataset_params.experiment_result_uri,dataset_params.name, 'Accuracy')
     # plot_support(support_samples, dataset.unique_classes_map, dataset_params.experiment_result_uri, dataset_params.name, few_shot_params.k_shots, 'train', few_shot_params.n_ways)
     # plot_query(query_samples, predicted_logits, dataset.unique_classes_map, dataset_params.experiment_result_uri, dataset_params.name, few_shot_params.k_shots, 'train', few_shot_params.n_ways)
 
-    save_support_query_prediction_samples(support_samples, query_samples, predicted_logits, f'{dataset_params.name}_{few_shot_params.n_ways}_{few_shot_params.k_shots}')
-    # model.load_state_dict(torch.load(f'{training_params.ckpts}/{dataset_params.name}'))
-    # test_proto(model, test_set, testing_params.k_shots, dataset_params, dataset.unique_classes_map)
+    # save_support_query_prediction_samples(support_samples, query_samples, predicted_logits, f'{dataset_params.name}_{few_shot_params.n_ways}_{few_shot_params.k_shots}')
+    test_proto(model, test_set, testing_params.k_shots, dataset_params, dataset.unique_classes_map)
 
 
 def split_batch(pcd_features: torch.Tensor, labels: torch.Tensor):
