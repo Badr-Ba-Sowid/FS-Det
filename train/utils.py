@@ -8,10 +8,14 @@ import torch
 import torch.nn.functional as F
 
 
-def save_support_query_samples(data: List[Dict[str, NDArray]], filename: str):
-    output_array = np.stack(data, axis=0) # type: ignore
+def save_support_query_prediction_samples(support: List[Dict[str, NDArray]], query:List[Dict[str, NDArray]], logits: List[NDArray], filename_prefix: str):
+    support_arr = np.stack(support, axis=0) # type: ignore
+    query_arr = np.stack(query, axis=0) # type: ignore
+    logits_arr = np.stack(logits, axis=0)
 
-    np.save(filename, output_array)
+    np.save(f'data/test_set/support_{filename_prefix}.npy', support_arr)
+    np.save(f'data/test_set/query_{filename_prefix}.npy', query_arr)
+    np.save(f'data/test_set/predictions_{filename_prefix}.npy', logits_arr)
 
 def cal_loss(pred, gold, smoothing=True):
     ''' Calculate cross entropy loss, apply label smoothing if needed. '''
