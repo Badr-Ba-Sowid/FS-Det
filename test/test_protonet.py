@@ -105,7 +105,7 @@ def test(model: Union[ProtoNet, ProtoNetParallerWrapper], dataset: PointCloudDat
 
             predicted_targets.append(logits.cpu().numpy())
 
-    return (mean(batch_acc), stdev(batch_acc)), (support_samples, query_samples, predicted_targets)
+    return (mean(batch_acc), stdev(batch_acc)), (support_samples, query_samples, predicted_targets) # type: ignore
 
 
 def prepare_dataset(config: Config):

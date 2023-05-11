@@ -8,10 +8,10 @@ import torch
 import torch.nn.functional as F
 
 
-def save_support_query_prediction_samples(support: List[Dict[str, NDArray]], query:List[Dict[str, NDArray]], logits: List[NDArray], filename_prefix: str):
+def save_support_query_prediction_samples(support: List[Dict[str, NDArray]], query:List[Dict[str, NDArray]], logits: List[Dict[str, NDArray]], filename_prefix: str):
     support_arr = np.stack(support, axis=0) # type: ignore
     query_arr = np.stack(query, axis=0) # type: ignore
-    logits_arr = np.stack(logits, axis=0)
+    logits_arr = np.stack(logits, axis=0) # type: ignore
 
     np.save(f'data/test_set/support_{filename_prefix}.npy', support_arr)
     np.save(f'data/test_set/query_{filename_prefix}.npy', query_arr)

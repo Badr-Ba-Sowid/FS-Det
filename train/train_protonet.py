@@ -103,7 +103,7 @@ def train(config: Config):
 
     support_samples: List[Dict[str, NDArray]] = []
     query_samples: List[Dict[str, NDArray]] = []
-    predicted_logits: List[NDArray] = []
+    predicted_logits: List[Dict[str, NDArray]] = []
 
     for epoch in range(training_params.epochs):
         model.train()
@@ -128,7 +128,7 @@ def train(config: Config):
             if(epoch == 0 or epoch==9):
                 support_samples.append({'pcd': pcd_support, 'label': support_labels.cpu().numpy()})
                 query_samples.append({'pcd': pcd_query, 'label': query_labels.cpu().numpy()})
-                predicted_logits.append(logits.cpu().detach().numpy())
+                predicted_logits.append({'logtis': logits.cpu().detach().numpy()}) 
 
             optimizer.zero_grad()
             loss.backward()

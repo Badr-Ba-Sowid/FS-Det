@@ -10,8 +10,8 @@ TRAINING:
   # device_ids: [0,1,2,3]
 
 FEWSHOT:
-  n_ways: 15
-  k_shots: 5
+  n_ways: 10
+  k_shots: 10
   n_tasks: 10
   test_k_shots: [5, 10, 15, 20]
 
