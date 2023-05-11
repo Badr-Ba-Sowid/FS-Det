@@ -145,26 +145,19 @@ class PointCloudDataset(Dataset):
 
     def balance(self):
         uniq_labels = self.labels.unique()
-        label_count = []
-        min_count = 1000000000
+
+        min_count = int('inf')
         for label in uniq_labels:
             count = torch.sum(self.labels.eq(label)).item()
             if count < min_count:
                 min_count = count
-        print(self.labels.shape)
-        print(self.pcds.shape)
-        self.keep_n_examples_from_each_label(min_count)
-        print(self.labels.shape)
-        print(self.pcds.shape)
 
-        # self.remove_class([d['label'] for d in label_count if d['count'] != most_common_count])
+        self.keep_n_examples_from_each_label(min_count)
 
     def remove_class(self, label_values: List[float]):
         labels = self.labels.numpy()
         pcds = self.pcds.numpy()
-        print(self.labels.shape)
-        print(self.pcds.shape)
-        print(len(label_values))
+
         for label in label_values:
             indexes = np.where(labels == label)[0]
 
@@ -173,8 +166,6 @@ class PointCloudDataset(Dataset):
 
         self.labels = torch.from_numpy(labels)
         self.pcds = torch.from_numpy(pcds)
-        print(self.labels.shape)
-        print(self.pcds.shape)
 
 class FewShotBatchSampler(Sampler):
     def __init__(self, dataset_labels: torch.Tensor, n_ways: int, k_shots: int, include_query: bool=False, shuffle: bool=True, shuffle_once: bool=True) -> None:
